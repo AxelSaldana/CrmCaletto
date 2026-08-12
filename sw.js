@@ -1,8 +1,14 @@
-/* Service worker mínimo: cachea el "shell" de la app (HTML/CSS/JS) para que abra
-   al instante desde la pantalla de inicio. Los datos siempre se piden en vivo a
-   la API — este service worker nunca cachea /api/. */
+/* Service worker: cachea el "shell" de la app (HTML/CSS/JS) para que abra
+   rápido y funcione sin internet. Los datos siempre se piden en vivo a
+   /api/ (nunca se cachean).
 
-var CACHE = "panorama-ejecutivo-v1";
+   Estrategia "network-first": en cada apertura, si hay internet, siempre
+   trae la versión más reciente del shell y actualiza la caché — así un
+   nuevo deploy se ve de inmediato la próxima vez que se abre la app, en
+   vez de quedarse pegado en una versión vieja. Solo usa la caché cuando
+   no hay conexión. */
+
+var CACHE = "panorama-ejecutivo-v2";
 var ARCHIVOS = ["./", "./index.html", "./style.css", "./app.js", "./manifest.json"];
 
 self.addEventListener("install", function (e) {
@@ -24,8 +30,14 @@ self.addEventListener("fetch", function (e) {
   if (url.pathname.indexOf("/api/") !== -1) return; // nunca cachear la API
 
   e.respondWith(
-    caches.match(e.request).then(function (cached) {
-      return cached || fetch(e.request);
-    })
+    fetch(e.request)
+      .then(function (res) {
+        var copia = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copia); });
+        return res;
+      })
+      .catch(function () {
+        return caches.match(e.request);
+      })
   );
 });
