@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2a78d6">
+<title>Panorama Ejecutivo</title>
+
+<!-- Instalable en iOS (Safari: Compartir > Agregar a inicio) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Panorama Ejecutivo">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+<!-- Instalable en Android (Chrome ofrece "Instalar app" automáticamente) -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+
+<!-- Pantalla: configuración inicial -->
+<div class="estado-pantalla" id="pantallaSetup" style="display:none;">
+  <img src="icons/icon-192.png" class="estado-logo" alt="">
+  <div class="estado-titulo">Panorama Ejecutivo</div>
+  <div class="estado-texto">Conéctate una sola vez con la dirección y el código de acceso que te compartieron.</div>
+  <div class="estado-form">
+    <div>
+      <label>Dirección de la API</label>
+      <input type="url" id="setupUrl" placeholder="https://tuservidor.com/api/crmejecutivo.php">
+    </div>
+    <div>
+      <label>Código de acceso</label>
+      <input type="text" id="setupToken" placeholder="Código">
+    </div>
+    <button type="button" class="btn btn-primario" onclick="ccGuardarConfig()">Conectar</button>
+  </div>
+</div>
+
+<!-- Pantalla: cargando -->
+<div class="estado-pantalla" id="pantallaCargando" style="display:none;">
+  <div class="spinner"></div>
+  <div class="estado-texto">Cargando información...</div>
+</div>
+
+<!-- Pantalla: error -->
+<div class="estado-pantalla" id="pantallaError" style="display:none;">
+  <img src="icons/icon-192.png" class="estado-logo" alt="">
+  <div class="estado-titulo">No se pudo cargar</div>
+  <div class="estado-texto" id="errorTexto">Ocurrió un problema al conectar.</div>
+  <div class="estado-form">
+    <button type="button" class="btn btn-primario" onclick="ccCargarDatos()">Reintentar</button>
+    <button type="button" class="btn btn-fantasma" onclick="ccReconfigurar()">Cambiar configuración</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none;">
+
+  <div class="app-cabecera">
+    <div>
+      <div class="app-marca"><img src="icons/icon-192.png" alt=""> Panorama Ejecutivo</div>
+      <div class="app-marca-sub">Grupo Caletto &middot; vista de solo lectura</div>
+    </div>
+    <button type="button" class="app-btn-refrescar" id="btnRefrescar" onclick="ccCargarDatos()" title="Actualizar">
+      <i class="fa fa-refresh"></i>
+    </button>
+  </div>
+
+  <div class="app-body">
+
+    <div class="toolbar">
+      <select id="fPlaza" onchange="ccFiltrarFraccPorPlaza(); ccRender()">
+        <option value="">Todas las plazas</option>
+      </select>
+      <select id="fFracc" onchange="ccRender()"><option value="">Todos los fraccionamientos</option></select>
+      <select id="fVendedor" onchange="ccRender()"><option value="">Todos los vendedores</option></select>
+    </div>
+
+    <div class="banner" id="banner"></div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="card">
+      <div class="card-titulo">Distribución del pipeline por fase</div>
+      <div id="embudo"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Atención requerida</div>
+      <div id="alertas"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Próximas citas y firmas</div>
+      <div id="proximas"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Ranking de vendedores</div>
+      <div id="ranking"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Por plaza</div>
+      <div id="porPlaza"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Por fraccionamiento</div>
+      <div id="porFracc"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Motivos de cancelación</div>
+      <div id="motivos"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Dónde se atora el proceso</div>
+      <div id="tiempoEtapas"></div>
+    </div>
+
+    <div class="estado-form" style="margin-top:4px;">
+      <button type="button" class="btn btn-fantasma" onclick="ccReconfigurar()">Cambiar configuración</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de detalle (solo lectura) -->
+<div class="overlay" id="overlayDetalle">
+  <div class="panel">
+    <h4 id="detTitulo">Cliente</h4>
+    <div class="panel-sub" id="detSub"></div>
+
+    <div class="detalle-grid" id="detGrid"></div>
+
+    <div id="detEtapaBadge"></div>
+    <div class="docs-row" id="detDocs"></div>
+
+    <div class="seguimientos-titulo">Historial de interacciones <span class="seguimientos-contador" id="detContador"></span></div>
+    <div class="seguimientos-bitacora" id="detHistorial"></div>
+
+    <div class="panel-acciones">
+      <button type="button" class="btn btn-fantasma" onclick="ccCerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js"); });
+  }
+</script>
+</body>
+</html>
