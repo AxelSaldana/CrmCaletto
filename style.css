@@ -24,6 +24,11 @@ a{color:inherit;}
   animation:girar 0.8s linear infinite;}
 @keyframes girar{to{transform:rotate(360deg);}}
 
+.guia-lista{display:flex;flex-direction:column;gap:14px;width:100%;max-width:340px;text-align:left;margin-top:4px;}
+.guia-item{display:flex;align-items:flex-start;gap:12px;font-size:0.92em;color:var(--tinta);line-height:1.4;}
+.guia-item i{color:var(--azul);font-size:1.2em;margin-top:1px;width:20px;text-align:center;flex-shrink:0;}
+.guia-item strong{color:var(--tinta-fuerte);}
+
 .btn{border-radius:8px;padding:11px 18px;font-size:1em;font-weight:700;cursor:pointer;border:1px solid transparent;width:100%;}
 .btn-primario{background:var(--azul);border-color:var(--azul);color:#fff;}
 .btn-primario:hover{background:#367fa9;}
@@ -36,6 +41,7 @@ a{color:inherit;}
 .app-marca{font-weight:800;font-size:1.25em;color:var(--tinta-fuerte);display:flex;align-items:center;gap:10px;}
 .app-marca img{width:30px;height:30px;border-radius:8px;}
 .app-marca-sub{color:var(--tinta-suave);font-size:0.78em;font-weight:600;margin-top:1px;}
+.app-cabecera-btns{display:flex;align-items:center;gap:4px;}
 .app-btn-refrescar{background:none;border:none;color:var(--azul);font-size:1.3em;padding:6px;cursor:pointer;}
 .app-btn-refrescar.girando{animation:girar 0.8s linear infinite;}
 

@@ -21,6 +21,22 @@
 </head>
 <body>
 
+<!-- Pantalla: bienvenida (solo primera vez) -->
+<div class="estado-pantalla" id="pantallaBienvenida" style="display:none;">
+  <img src="icons/icon-192.png" class="estado-logo" alt="">
+  <div class="estado-titulo">Bienvenido</div>
+  <div class="estado-texto">Este es tu Panorama Ejecutivo: así se ve todo tu negocio en un vistazo, actualizado en tiempo real.</div>
+  <div class="guia-lista">
+    <div class="guia-item"><i class="fa fa-exclamation-triangle"></i><div><strong>El aviso de arriba</strong> te dice de un vistazo si algo necesita tu atención — verde, amarillo o rojo.</div></div>
+    <div class="guia-item"><i class="fa fa-bar-chart"></i><div><strong>Resumen</strong> son los números importantes: cuánto llevas, qué está atorado, qué viene.</div></div>
+    <div class="guia-item"><i class="fa fa-columns"></i><div><strong>Kanban</strong> es cada cliente agrupado por en qué etapa va — desliza para ver más columnas.</div></div>
+    <div class="guia-item"><i class="fa fa-hand-pointer-o"></i><div>Toca el nombre de cualquier cliente para ver su historial completo.</div></div>
+  </div>
+  <div class="estado-form">
+    <button type="button" class="btn btn-primario" onclick="ccCerrarBienvenida()">Entendido, vamos</button>
+  </div>
+</div>
+
 <!-- Pantalla: cargando -->
 <div class="estado-pantalla" id="pantallaCargando" style="display:none;">
   <div class="spinner"></div>
@@ -45,9 +61,14 @@
       <div class="app-marca"><img src="icons/icon-192.png" alt=""> Panorama Ejecutivo</div>
       <div class="app-marca-sub">Grupo Caletto &middot; vista de solo lectura</div>
     </div>
-    <button type="button" class="app-btn-refrescar" id="btnRefrescar" onclick="ccCargarDatos()" title="Actualizar">
-      <i class="fa fa-refresh"></i>
-    </button>
+    <div class="app-cabecera-btns">
+      <button type="button" class="app-btn-refrescar" onclick="ccMostrarBienvenida()" title="Ayuda">
+        <i class="fa fa-question-circle"></i>
+      </button>
+      <button type="button" class="app-btn-refrescar" id="btnRefrescar" onclick="ccCargarDatos()" title="Actualizar">
+        <i class="fa fa-refresh"></i>
+      </button>
+    </div>
   </div>
 
   <div class="tabs">

@@ -10,6 +10,7 @@ var API_URL = "/api/crmejecutivo";
 var DATA = null;
 var ultimaActualizacion = null;
 var kbFaseColapsada = {};
+var ONBOARDING_KEY = "ccVistoBienvenida";
 
 /* ----- Tabs (Resumen / Kanban) ----- */
 
@@ -21,10 +22,25 @@ function ccCambiarTab(tab) {
   document.getElementById("vistaKanban").style.display = (tab === "kanban") ? "" : "none";
 }
 
+/* ----- Bienvenida (primera vez, o bajo demanda con el botón de ayuda) ----- */
+
+function ccCerrarBienvenida() {
+  localStorage.setItem(ONBOARDING_KEY, "1");
+  if (DATA) {
+    ccMostrarPantalla("app");
+  } else {
+    ccCargarDatos();
+  }
+}
+
+function ccMostrarBienvenida() {
+  ccMostrarPantalla("bienvenida");
+}
+
 /* ----- Estados de pantalla ----- */
 
 function ccMostrarPantalla(nombre) {
-  ["Cargando", "Error"].forEach(function (n) {
+  ["Bienvenida", "Cargando", "Error"].forEach(function (n) {
     document.getElementById("pantalla" + n).style.display = (n.toLowerCase() === nombre) ? "flex" : "none";
   });
   document.getElementById("app").style.display = (nombre === "app") ? "block" : "none";
@@ -539,7 +555,11 @@ function ccCerrarDetalle() {
 /* ----- Arranque ----- */
 
 document.addEventListener("DOMContentLoaded", function () {
-  ccCargarDatos();
+  if (localStorage.getItem(ONBOARDING_KEY)) {
+    ccCargarDatos();
+  } else {
+    ccMostrarPantalla("bienvenida");
+  }
 });
 
 document.addEventListener("visibilitychange", function () {
