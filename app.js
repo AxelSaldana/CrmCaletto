@@ -1,11 +1,11 @@
 /* Panorama Ejecutivo - app web instalable, solo lectura.
-   Consume /api/crmejecutivo, una función serverless que vive en este mismo
-   proyecto de Vercel — no depende de ningún otro servidor. Abre directo,
-   sin login ni configuración: son datos de prueba, no hay nada que proteger
-   todavía. Cuando esto conecte a datos reales del negocio, ahí sí hay que
-   diseñar un login de verdad antes de publicar. */
+   Consume /api/proxy, una función serverless que vive en este mismo
+   proyecto de Vercel. Ese proxy es el que sabe la URL real del CRM
+   interno y el token de acceso (guardados como variables de entorno
+   de Vercel, nunca en este código) — así el navegador nunca ve el
+   token. Abre directo, sin login ni configuración. */
 
-var API_URL = "/api/crmejecutivo";
+var API_URL = "/api/proxy";
 
 var DATA = null;
 var ultimaActualizacion = null;
