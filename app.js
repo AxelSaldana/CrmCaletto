@@ -1,37 +1,19 @@
 /* Panorama Ejecutivo - app web instalable, solo lectura.
-   Consume la API en vistas/api/crmejecutivo.php del CRM interno (Bearer token). */
+   Consume /api/crmejecutivo, una función serverless que vive en este mismo
+   proyecto de Vercel — no depende de ningún otro servidor. Abre directo,
+   sin login ni configuración: son datos de prueba, no hay nada que proteger
+   todavía. Cuando esto conecte a datos reales del negocio, ahí sí hay que
+   diseñar un login de verdad antes de publicar. */
 
-var STORAGE_KEY = "ccApiConfig";
+var API_URL = "/api/crmejecutivo";
+
 var DATA = null;
 var ultimaActualizacion = null;
-
-/* ----- Configuración (URL de la API + token) ----- */
-
-function ccGetConfig() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; } catch (e) { return null; }
-}
-
-function ccGuardarConfig() {
-  var url = document.getElementById("setupUrl").value.trim();
-  var token = document.getElementById("setupToken").value.trim();
-  if (!url || !token) return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ apiUrl: url, token: token }));
-  ccCargarDatos();
-}
-
-function ccReconfigurar() {
-  localStorage.removeItem(STORAGE_KEY);
-  DATA = null;
-  ccMostrarPantalla("setup");
-  var cfg = ccGetConfig();
-  document.getElementById("setupUrl").value = "";
-  document.getElementById("setupToken").value = "";
-}
 
 /* ----- Estados de pantalla ----- */
 
 function ccMostrarPantalla(nombre) {
-  ["Setup", "Cargando", "Error"].forEach(function (n) {
+  ["Cargando", "Error"].forEach(function (n) {
     document.getElementById("pantalla" + n).style.display = (n.toLowerCase() === nombre) ? "flex" : "none";
   });
   document.getElementById("app").style.display = (nombre === "app") ? "block" : "none";
@@ -40,16 +22,12 @@ function ccMostrarPantalla(nombre) {
 /* ----- Carga de datos ----- */
 
 function ccCargarDatos() {
-  var cfg = ccGetConfig();
-  if (!cfg) { ccMostrarPantalla("setup"); return; }
-
   var btn = document.getElementById("btnRefrescar");
   if (btn) btn.classList.add("girando");
   if (!DATA) ccMostrarPantalla("cargando");
 
-  fetch(cfg.apiUrl, { headers: { "Authorization": "Bearer " + cfg.token } })
+  fetch(API_URL)
     .then(function (res) {
-      if (res.status === 401) { throw { tipo: "auth" }; }
       if (!res.ok) { throw { tipo: "http", status: res.status }; }
       return res.json();
     })
@@ -62,8 +40,7 @@ function ccCargarDatos() {
     })
     .catch(function (err) {
       var msg = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
-      if (err && err.tipo === "auth") msg = "Código de acceso inválido. Verifica la configuración.";
-      else if (err && err.tipo === "http") msg = "El servidor respondió con un error (" + err.status + ").";
+      if (err && err.tipo === "http") msg = "El servidor respondió con un error (" + err.status + ").";
       document.getElementById("errorTexto").textContent = msg;
       ccMostrarPantalla("error");
     })
@@ -481,11 +458,6 @@ function ccCerrarDetalle() {
 /* ----- Arranque ----- */
 
 document.addEventListener("DOMContentLoaded", function () {
-  var cfg = ccGetConfig();
-  if (cfg) {
-    document.getElementById("setupUrl").value = cfg.apiUrl;
-    document.getElementById("setupToken").value = cfg.token;
-  }
   ccCargarDatos();
 });
 

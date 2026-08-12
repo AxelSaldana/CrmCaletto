@@ -21,24 +21,6 @@
 </head>
 <body>
 
-<!-- Pantalla: configuración inicial -->
-<div class="estado-pantalla" id="pantallaSetup" style="display:none;">
-  <img src="icons/icon-192.png" class="estado-logo" alt="">
-  <div class="estado-titulo">Panorama Ejecutivo</div>
-  <div class="estado-texto">Conéctate una sola vez con la dirección y el código de acceso que te compartieron.</div>
-  <div class="estado-form">
-    <div>
-      <label>Dirección de la API</label>
-      <input type="url" id="setupUrl" placeholder="https://tuservidor.com/api/crmejecutivo.php">
-    </div>
-    <div>
-      <label>Código de acceso</label>
-      <input type="text" id="setupToken" placeholder="Código">
-    </div>
-    <button type="button" class="btn btn-primario" onclick="ccGuardarConfig()">Conectar</button>
-  </div>
-</div>
-
 <!-- Pantalla: cargando -->
 <div class="estado-pantalla" id="pantallaCargando" style="display:none;">
   <div class="spinner"></div>
@@ -52,7 +34,6 @@
   <div class="estado-texto" id="errorTexto">Ocurrió un problema al conectar.</div>
   <div class="estado-form">
     <button type="button" class="btn btn-primario" onclick="ccCargarDatos()">Reintentar</button>
-    <button type="button" class="btn btn-fantasma" onclick="ccReconfigurar()">Cambiar configuración</button>
   </div>
 </div>
 
@@ -121,10 +102,6 @@
     <div class="card">
       <div class="card-titulo">Dónde se atora el proceso</div>
       <div id="tiempoEtapas"></div>
-    </div>
-
-    <div class="estado-form" style="margin-top:4px;">
-      <button type="button" class="btn btn-fantasma" onclick="ccReconfigurar()">Cambiar configuración</button>
     </div>
 
   </div>
