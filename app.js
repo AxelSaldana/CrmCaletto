@@ -565,3 +565,19 @@ document.addEventListener("DOMContentLoaded", function () {
 document.addEventListener("visibilitychange", function () {
   if (document.visibilityState === "visible" && DATA) ccCargarDatos();
 });
+
+/* ----- Atrapar el gesto de "atrás" del sistema -----
+   Esta app es una sola pantalla, sin navegación real entre páginas. Si el
+   sistema intenta "regresar" y no hay nada a dónde ir, en modo app instalada
+   (standalone) muestra pantalla negra en vez de quedarse quieto. Empujamos
+   un estado de historial y lo reponemos en cada popstate para que ese gesto
+   nunca llegue a sacar a la app de la página — como bonus, si hay un modal
+   abierto, lo cierra primero en vez de no hacer nada. */
+history.pushState(null, "", location.href);
+window.addEventListener("popstate", function () {
+  var overlay = document.getElementById("overlayDetalle");
+  if (overlay && overlay.classList.contains("activo")) {
+    ccCerrarDetalle();
+  }
+  history.pushState(null, "", location.href);
+});
