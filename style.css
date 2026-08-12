@@ -52,6 +52,8 @@ a{color:inherit;}
 
 .app-body{padding:16px 16px 40px;display:flex;flex-direction:column;gap:16px;max-width:640px;margin:0 auto;}
 
+#vistaResumen{display:flex;flex-direction:column;gap:16px;}
+
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
 .toolbar select{flex:1;min-width:100px;border:1px solid var(--linea);border-radius:8px;padding:9px 10px;font-size:0.95em;background:#fff;}
 .toolbar input[type=text]{flex:1;min-width:150px;border:1px solid var(--linea);border-radius:8px;padding:9px 12px;font-size:0.95em;background:#fff;}
@@ -171,4 +173,22 @@ a{color:inherit;}
   .kpis{grid-template-columns:repeat(4,1fr);}
   .overlay{align-items:center;}
   .panel{border-radius:16px;}
+}
+
+/* ----- Pantallas anchas (navegador de escritorio): la app se expande y
+   las tarjetas del Resumen se acomodan en columnas en vez de una sola
+   columna angosta. El celular (todo lo de arriba) no cambia. ----- */
+@media (min-width:900px){
+  .app-body{max-width:1180px;padding:24px 32px 48px;}
+  .toolbar{gap:12px;}
+  #vistaResumen{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;align-items:start;}
+  .kpis{grid-column:1 / -1;}
+  .ancha{grid-column:1 / -1;}
+  .kb-columnas{padding-bottom:12px;}
+  .kb-columna{max-width:280px;}
+}
+
+@media (min-width:1400px){
+  .app-body{max-width:1440px;}
+  #vistaResumen{grid-template-columns:repeat(3,1fr);}
 }
