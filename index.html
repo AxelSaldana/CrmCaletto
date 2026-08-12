@@ -79,6 +79,9 @@
   <div class="app-body">
 
     <div class="toolbar">
+      <input type="text" id="fBuscar" placeholder="Buscar cliente, lote..." oninput="ccRender()">
+    </div>
+    <div class="toolbar">
       <select id="fPlaza" onchange="ccFiltrarFraccPorPlaza(); ccRender()">
         <option value="">Todas las plazas</option>
       </select>
@@ -95,6 +98,11 @@
       <div class="card">
         <div class="card-titulo">Distribución del pipeline por fase</div>
         <div id="embudo"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Desglose de Firmas</div>
+        <div id="firmasDetalle"></div>
       </div>
 
       <div class="card">
@@ -129,6 +137,7 @@
 
       <div class="card">
         <div class="card-titulo">Dónde se atora el proceso</div>
+        <div class="card-nota">Aproximado: usa la fecha del último cambio registrado en cada caso, no necesariamente cuándo entró a esa etapa.</div>
         <div id="tiempoEtapas"></div>
       </div>
 

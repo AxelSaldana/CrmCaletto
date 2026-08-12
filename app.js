@@ -155,6 +155,7 @@ function ccFiltrarFraccPorPlaza() {
 }
 
 function ccDatosFiltrados() {
+  var texto = (document.getElementById("fBuscar").value || "").toLowerCase().trim();
   var plaza = document.getElementById("fPlaza").value;
   var fraccionamiento = document.getElementById("fFracc").value;
   var vendedor = document.getElementById("fVendedor").value;
@@ -162,6 +163,10 @@ function ccDatosFiltrados() {
     if (vendedor && d.vendedor !== vendedor) return false;
     if (fraccionamiento && d.fraccionamiento !== fraccionamiento) return false;
     if (plaza && ccPlazaDe(d.fraccionamiento) !== plaza) return false;
+    if (texto) {
+      var campo = (d.nombre + " " + (d.lote || "") + " " + (d.fraccionamiento || "")).toLowerCase();
+      if (campo.indexOf(texto) === -1) return false;
+    }
     return true;
   });
 }
@@ -173,6 +178,7 @@ function ccRender() {
   ccRenderBanner(datos);
   ccRenderKpis(datos);
   ccRenderEmbudo(datos);
+  ccRenderFirmasDetalle(datos);
   ccRenderAlertas(datos);
   ccRenderProximas(datos);
   ccRenderRanking(datos);
@@ -256,17 +262,50 @@ function ccRenderEmbudo(datos) {
 
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
+    var esDemo = f.fase.clave === "preventa";
     var conv = "";
     if (i > 0) {
       var anterior = filas[i - 1];
-      var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
-      conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
+      if (anterior.fase.clave === "preventa") {
+        conv = '<div class="conversion">Preventa aún no está conectada a datos reales — no comparable</div>';
+      } else {
+        var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
+        conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
+      }
     }
     return conv +
       '<div class="barra-fila">' +
-        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre + '</span>' +
+        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre +
+          (esDemo ? ' <span class="etiqueta-demo">ejemplo</span>' : '') + '</span>' +
         '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.fase.color + '">' + (f.count || "") + '</div></div>' +
+      '</div>';
+  }).join("");
+}
+
+function ccRenderFirmasDetalle(datos) {
+  var etapasFirmas = DATA.etapas.filter(function (e) { return e.fase === "firmas"; });
+  var filas = etapasFirmas.map(function (etapa) {
+    var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
+    var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
+    return { etapa: etapa, count: items.length, monto: monto };
+  });
+
+  var cont = document.getElementById("firmasDetalle");
+  var totalFirmas = filas.reduce(function (s, f) { return s + f.count; }, 0);
+  if (!totalFirmas) {
+    cont.innerHTML = '<div class="vacio"><i class="fa fa-gavel"></i><br>Sin casos en Firmas todavía.</div>';
+    return;
+  }
+
+  var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
+  cont.innerHTML = filas.map(function (f) {
+    var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
+    return '' +
+      '<div class="barra-fila">' +
+        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.etapa.icono + '" style="color:' + f.etapa.color + '"></i>' + f.etapa.nombre + '</span>' +
+        '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
+        '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.etapa.color + '">' + (f.count || "") + '</div></div>' +
       '</div>';
   }).join("");
 }

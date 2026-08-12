@@ -54,6 +54,9 @@ a{color:inherit;}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
 .toolbar select{flex:1;min-width:100px;border:1px solid var(--linea);border-radius:8px;padding:9px 10px;font-size:0.95em;background:#fff;}
+.toolbar input[type=text]{flex:1;min-width:150px;border:1px solid var(--linea);border-radius:8px;padding:9px 12px;font-size:0.95em;background:#fff;}
+
+.card-nota{font-size:0.8em;color:var(--tinta-suave);margin:-6px 0 12px;line-height:1.4;}
 
 /* ----- Kanban (solo lectura, columnas con scroll horizontal tipo carrusel) ----- */
 .kb-fase-grupo{margin-bottom:18px;}
@@ -110,6 +113,7 @@ a{color:inherit;}
 .barra-fila:last-child{margin-bottom:0;}
 .barra-cab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-size:0.92em;gap:8px;flex-wrap:wrap;}
 .barra-nombre{font-weight:700;color:var(--tinta-fuerte);display:flex;align-items:center;gap:7px;}
+.etiqueta-demo{font-weight:700;font-size:0.7em;color:var(--naranja);background:var(--naranja-suave);padding:2px 7px;border-radius:8px;text-transform:uppercase;letter-spacing:.02em;}
 .barra-valor{color:var(--tinta-suave);font-weight:600;font-size:0.82em;white-space:nowrap;}
 .barra-pista{background:#eef1f5;border-radius:8px;height:22px;overflow:hidden;}
 .barra-fill{height:100%;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;
