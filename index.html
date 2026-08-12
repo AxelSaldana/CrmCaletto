@@ -50,6 +50,11 @@
     </button>
   </div>
 
+  <div class="tabs">
+    <button type="button" class="tab-btn activo" data-tab="resumen" onclick="ccCambiarTab('resumen')"><i class="fa fa-bar-chart"></i> Resumen</button>
+    <button type="button" class="tab-btn" data-tab="kanban" onclick="ccCambiarTab('kanban')"><i class="fa fa-columns"></i> Kanban</button>
+  </div>
+
   <div class="app-body">
 
     <div class="toolbar">
@@ -62,46 +67,54 @@
 
     <div class="banner" id="banner"></div>
 
-    <div class="kpis" id="kpis"></div>
+    <div id="vistaResumen">
 
-    <div class="card">
-      <div class="card-titulo">Distribución del pipeline por fase</div>
-      <div id="embudo"></div>
+      <div class="kpis" id="kpis"></div>
+
+      <div class="card">
+        <div class="card-titulo">Distribución del pipeline por fase</div>
+        <div id="embudo"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Atención requerida</div>
+        <div id="alertas"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Próximas citas y firmas</div>
+        <div id="proximas"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Ranking de vendedores</div>
+        <div id="ranking"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Por plaza</div>
+        <div id="porPlaza"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Por fraccionamiento</div>
+        <div id="porFracc"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Motivos de cancelación</div>
+        <div id="motivos"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Dónde se atora el proceso</div>
+        <div id="tiempoEtapas"></div>
+      </div>
+
     </div>
 
-    <div class="card">
-      <div class="card-titulo">Atención requerida</div>
-      <div id="alertas"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Próximas citas y firmas</div>
-      <div id="proximas"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Ranking de vendedores</div>
-      <div id="ranking"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Por plaza</div>
-      <div id="porPlaza"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Por fraccionamiento</div>
-      <div id="porFracc"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Motivos de cancelación</div>
-      <div id="motivos"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Dónde se atora el proceso</div>
-      <div id="tiempoEtapas"></div>
+    <div id="vistaKanban" style="display:none;">
+      <div id="kanbanBoard"></div>
     </div>
 
   </div>

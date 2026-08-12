@@ -9,6 +9,17 @@ var API_URL = "/api/crmejecutivo";
 
 var DATA = null;
 var ultimaActualizacion = null;
+var kbFaseColapsada = {};
+
+/* ----- Tabs (Resumen / Kanban) ----- */
+
+function ccCambiarTab(tab) {
+  document.querySelectorAll(".tab-btn").forEach(function (btn) {
+    btn.classList.toggle("activo", btn.getAttribute("data-tab") === tab);
+  });
+  document.getElementById("vistaResumen").style.display = (tab === "resumen") ? "" : "none";
+  document.getElementById("vistaKanban").style.display = (tab === "kanban") ? "" : "none";
+}
 
 /* ----- Estados de pantalla ----- */
 
@@ -71,6 +82,10 @@ function ccPlazaDe(fraccionamiento) {
 
 function ccVendedorColor(nombre) {
   return DATA.vendedorColores[nombre] || "#3c8dbc";
+}
+
+function ccIniciales(nombre) {
+  return nombre.split(" ").map(function (p) { return p[0]; }).join("").substring(0, 2).toUpperCase();
 }
 
 function ccChipDias(dias, sla) {
@@ -149,6 +164,7 @@ function ccRender() {
   ccRenderFraccionamiento(datos);
   ccRenderMotivos(datos);
   ccRenderTiempoEtapas(datos);
+  ccRenderKanban(datos);
 }
 
 function ccRenderBanner(datos) {
@@ -406,6 +422,71 @@ function ccRenderTiempoEtapas(datos) {
       '<span class="barra-valor">' + f.promedio + ' d prom. · ' + f.count + '</span></div>' +
       '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.etapa.color + '">' + f.promedio + 'd</div></div></div>';
   }).join("");
+}
+
+function ccRenderTarjetaKanban(d) {
+  return '' +
+    '<div class="kb-tarjeta" style="--col-color:' + ccEtapaInfo(d.etapa).color + '" onclick="ccAbrirDetalle(' + d.id + ')">' +
+      '<div class="kb-t-nombre">' + d.nombre + '</div>' +
+      '<div class="kb-t-linea"><i class="fa fa-map-marker"></i> ' + d.lote + ', ' + d.fraccionamiento + '</div>' +
+      '<div class="kb-t-pie">' +
+        '<span class="kb-t-avatar" style="background:' + ccVendedorColor(d.vendedor) + '" title="' + d.vendedor + '">' + ccIniciales(d.vendedor) + '</span>' +
+        '<span class="kb-t-monto">' + ccMoneda(d.monto) + '</span>' +
+      '</div>' +
+    '</div>';
+}
+
+function ccRenderColumnaKanban(etapa, datos) {
+  var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
+  var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
+  var cuerpo = items.length
+    ? items.map(ccRenderTarjetaKanban).join("")
+    : '<div class="kb-col-vacia"><i class="fa fa-inbox"></i><br>Sin tarjetas</div>';
+
+  return '' +
+    '<div class="kb-columna">' +
+      '<div class="kb-col-cabecera" style="--col-color:' + etapa.color + '">' +
+        '<div class="kb-col-titulo"><i class="fa ' + etapa.icono + '" style="color:' + etapa.color + '"></i> ' + etapa.nombre + '</div>' +
+        '<div class="kb-col-meta"><span>' + items.length + ' tarjeta(s)</span><span>' + ccMoneda(monto) + '</span></div>' +
+      '</div>' +
+      '<div class="kb-col-cuerpo">' + cuerpo + '</div>' +
+    '</div>';
+}
+
+function ccRenderKanban(datos) {
+  var cont = document.getElementById("kanbanBoard");
+  if (!cont) return;
+
+  var fasesVisibles = DATA.fases.filter(function (f) { return f.clave !== "cancelado"; });
+
+  cont.innerHTML = fasesVisibles.map(function (fase) {
+    var etapasFase = DATA.etapas.filter(function (e) { return e.fase === fase.clave; });
+    var itemsFase = datos.filter(function (d) {
+      return etapasFase.some(function (e) { return e.clave === d.etapa; });
+    });
+    var montoFase = itemsFase.reduce(function (s, d) { return s + d.monto; }, 0);
+    var colapsada = !!kbFaseColapsada[fase.clave];
+
+    var etapasColumnas = etapasFase;
+    if (fase.clave === "preventa") {
+      etapasColumnas = etapasColumnas.concat(DATA.etapas.filter(function (e) { return e.clave === "cancelado"; }));
+    }
+    var columnasHtml = etapasColumnas.map(function (etapa) { return ccRenderColumnaKanban(etapa, datos); }).join("");
+
+    return '' +
+      '<div class="kb-fase-grupo">' +
+        '<div class="kb-fase-header' + (colapsada ? ' colapsada' : '') + '" style="--fase-color:' + fase.color + '" onclick="ccToggleFaseKanban(\'' + fase.clave + '\')">' +
+          '<div class="kb-fase-titulo"><i class="fa ' + fase.icono + '"></i> ' + fase.nombre + '<i class="fa fa-chevron-down kb-fase-chevron"></i></div>' +
+          '<div class="kb-fase-resumen">' + itemsFase.length + ' · ' + ccMoneda(montoFase) + '</div>' +
+        '</div>' +
+        '<div class="kb-columnas' + (colapsada ? ' colapsada' : '') + '">' + columnasHtml + '</div>' +
+      '</div>';
+  }).join("");
+}
+
+function ccToggleFaseKanban(clave) {
+  kbFaseColapsada[clave] = !kbFaseColapsada[clave];
+  ccRenderKanban(ccDatosFiltrados());
 }
 
 /* ----- Detalle de cliente (solo lectura) ----- */
