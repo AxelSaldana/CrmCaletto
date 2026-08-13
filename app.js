@@ -496,11 +496,22 @@ function ccRenderTiempoEtapas(datos) {
   }).join("");
 }
 
+function ccAlertaSlaKanban(d) {
+  var info = ccEtapaInfo(d.etapa);
+  if (info.fase !== "preventa") return "";
+  var sla = DATA.slaProspectoDias;
+  var dias = ccDiasDesde(d.ultimoSeguimiento);
+  if (dias <= sla) return "";
+  var vencido = dias - sla;
+  return '<div class="kb-alerta-sla"><i class="fa fa-exclamation-triangle"></i> Sin seguimiento — ' + vencido + ' día(s) vencido' + (vencido === 1 ? "" : "s") + '</div>';
+}
+
 function ccRenderTarjetaKanban(d) {
   return '' +
     '<div class="kb-tarjeta" style="--col-color:' + ccEtapaInfo(d.etapa).color + '" onclick="ccAbrirDetalle(' + d.id + ')">' +
       '<div class="kb-t-nombre">' + d.nombre + '</div>' +
       '<div class="kb-t-linea"><i class="fa fa-map-marker"></i> ' + d.lote + ', ' + d.fraccionamiento + '</div>' +
+      ccAlertaSlaKanban(d) +
       '<div class="kb-t-pie">' +
         '<span class="kb-t-avatar" style="background:' + ccVendedorColor(d.vendedor) + '" title="' + d.vendedor + '">' + ccIniciales(d.vendedor) + '</span>' +
         '<span class="kb-t-monto">' + ccMoneda(d.monto) + '</span>' +
