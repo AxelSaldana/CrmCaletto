@@ -310,6 +310,8 @@ function ccRenderFirmasDetalle(datos) {
   }).join("");
 }
 
+var ccAlertasExpandido = false;
+
 function ccRenderAlertas(datos) {
   var sla = DATA.slaProspectoDias;
   var vencidos = datos
@@ -320,12 +322,13 @@ function ccRenderAlertas(datos) {
 
   var cont = document.getElementById("alertas");
   if (!vencidos.length) {
+    ccAlertasExpandido = false;
     cont.innerHTML = '<div class="vacio"><i class="fa fa-check-circle"></i><br>Sin pendientes, todo al día.</div>';
     return;
   }
 
-  var top = vencidos.slice(0, 6);
-  cont.innerHTML = top.map(function (x) {
+  var mostrar = ccAlertasExpandido ? vencidos : vencidos.slice(0, 6);
+  var filas = mostrar.map(function (x) {
     var info = ccEtapaInfo(x.d.etapa);
     var clase = x.dias > sla + 3 ? "bad" : "warn";
     return '' +
@@ -333,7 +336,21 @@ function ccRenderAlertas(datos) {
         '<div><div class="item-nombre">' + x.d.nombre + '</div><div class="item-sub">' + info.nombre + ' · ' + x.d.vendedor + '</div></div>' +
         '<span class="item-chip ' + clase + '">' + x.dias + ' d</span>' +
       '</div>';
-  }).join("") + (vencidos.length > 6 ? '<div class="item-sub" style="text-align:center;margin-top:6px;">+' + (vencidos.length - 6) + ' más</div>' : "");
+  }).join("");
+
+  var pie = "";
+  if (vencidos.length > 6) {
+    pie = ccAlertasExpandido
+      ? '<div class="ver-mas" onclick="ccToggleAlertas()">Ver menos</div>'
+      : '<div class="ver-mas" onclick="ccToggleAlertas()">+' + (vencidos.length - 6) + ' más — ver todos</div>';
+  }
+
+  cont.innerHTML = '<div class="alertas-lista' + (ccAlertasExpandido ? ' expandida' : '') + '">' + filas + '</div>' + pie;
+}
+
+function ccToggleAlertas() {
+  ccAlertasExpandido = !ccAlertasExpandido;
+  ccRenderAlertas(ccDatosFiltrados());
 }
 
 function ccRenderProximas(datos) {

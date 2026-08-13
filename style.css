@@ -143,6 +143,13 @@ a{color:inherit;}
 .item-chip.bad{background:var(--coral-suave);color:var(--coral);}
 .vacio{color:#b6bcc6;text-align:center;padding:18px;}
 
+.alertas-lista.expandida{max-height:420px;overflow-y:auto;padding-right:4px;}
+.alertas-lista.expandida::-webkit-scrollbar{width:6px;}
+.alertas-lista.expandida::-webkit-scrollbar-thumb{background:#c9cfd8;border-radius:6px;}
+.alertas-lista.expandida::-webkit-scrollbar-track{background:transparent;}
+.ver-mas{text-align:center;color:var(--azul);font-weight:700;font-size:0.85em;padding:10px 0 2px;cursor:pointer;}
+.ver-mas:active{opacity:.7;}
+
 /* ----- Modal de detalle (solo lectura) ----- */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:1050;}
 .overlay.activo{display:flex;}
