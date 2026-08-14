@@ -226,7 +226,13 @@ function ccEtapaInfo(clave) {
 }
 
 function ccPlazaDe(fraccionamiento) {
-  return DATA.plazaPorFraccionamiento[fraccionamiento] || "";
+  var f = (fraccionamiento || "").trim();
+  if (DATA.plazaPorFraccionamiento[f] !== undefined) return DATA.plazaPorFraccionamiento[f];
+  var claves = Object.keys(DATA.plazaPorFraccionamiento);
+  for (var i = 0; i < claves.length; i++) {
+    if (claves[i].trim() === f) return DATA.plazaPorFraccionamiento[claves[i]];
+  }
+  return "";
 }
 
 function ccVendedorColor(nombre) {
@@ -245,11 +251,20 @@ function ccChipDias(dias, sla) {
 
 /* ----- Filtros ----- */
 
+function ccValoresUnicos(extractor) {
+  var vistos = {};
+  var lista = [];
+  DATA.clientes.forEach(function (d) {
+    var v = (extractor(d) || "").toString().trim();
+    if (v && !vistos[v]) { vistos[v] = true; lista.push(v); }
+  });
+  return lista.sort();
+}
+
 function ccPoblarFiltros() {
   var selPlaza = document.getElementById("fPlaza");
   if (selPlaza.options.length <= 1) {
-    var plazasUnicas = Array.from(new Set(Object.values(DATA.plazaPorFraccionamiento)));
-    plazasUnicas.forEach(function (p) {
+    ccValoresUnicos(function (d) { return ccPlazaDe(d.fraccionamiento); }).forEach(function (p) {
       var op = document.createElement("option");
       op.value = p; op.textContent = p;
       selPlaza.appendChild(op);
@@ -258,7 +273,7 @@ function ccPoblarFiltros() {
 
   var selVendedor = document.getElementById("fVendedor");
   if (selVendedor.options.length <= 1) {
-    DATA.vendedores.forEach(function (v) {
+    ccValoresUnicos(function (d) { return d.vendedor; }).forEach(function (v) {
       var op = document.createElement("option");
       op.value = v; op.textContent = v;
       selVendedor.appendChild(op);
@@ -274,8 +289,8 @@ function ccFiltrarFraccPorPlaza() {
   var plaza = selPlaza.value;
   var valorActual = selFracc.value;
 
-  var fraccionamientos = Object.keys(DATA.plazaPorFraccionamiento).filter(function (f) {
-    return !plaza || DATA.plazaPorFraccionamiento[f] === plaza;
+  var fraccionamientos = ccValoresUnicos(function (d) { return d.fraccionamiento; }).filter(function (f) {
+    return !plaza || ccPlazaDe(f) === plaza;
   });
 
   selFracc.innerHTML = '<option value="">Todos los fraccionamientos</option>';
@@ -293,8 +308,8 @@ function ccDatosFiltrados() {
   var fraccionamiento = document.getElementById("fFracc").value;
   var vendedor = document.getElementById("fVendedor").value;
   return DATA.clientes.filter(function (d) {
-    if (vendedor && d.vendedor !== vendedor) return false;
-    if (fraccionamiento && d.fraccionamiento !== fraccionamiento) return false;
+    if (vendedor && (d.vendedor || "").trim() !== vendedor) return false;
+    if (fraccionamiento && (d.fraccionamiento || "").trim() !== fraccionamiento) return false;
     if (plaza && ccPlazaDe(d.fraccionamiento) !== plaza) return false;
     if (texto) {
       var campo = (d.nombre + " " + (d.lote || "") + " " + (d.fraccionamiento || "")).toLowerCase();
@@ -514,8 +529,8 @@ function ccRenderProximas(datos) {
 }
 
 function ccRenderRanking(datos) {
-  var filas = DATA.vendedores.map(function (v) {
-    var items = datos.filter(function (d) { return d.vendedor === v; });
+  var filas = ccValoresUnicos(function (d) { return d.vendedor; }).map(function (v) {
+    var items = datos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(function (d) { return d.etapa === "finalizado"; }).length;
     return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v) };
