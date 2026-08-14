@@ -11,6 +11,124 @@ var DATA = null;
 var ultimaActualizacion = null;
 var kbFaseColapsada = {};
 var ONBOARDING_KEY = "ccVistoBienvenida";
+var MODO_DEMO = false;
+
+/* ----- Modo demo: datos de prueba en memoria, sin llamar a la API -----
+   Sirve para probar/mostrar la app sin depender del túnel/servidor real,
+   y permite "mover" tarjetas de etapa libremente porque nada de esto se
+   guarda en ningún lado — es puro estado local del navegador. */
+
+function ccFechaHace(dias) {
+  var d = new Date();
+  d.setDate(d.getDate() - dias);
+  return d.toISOString().substring(0, 10);
+}
+
+function ccFechaEn(dias) {
+  var d = new Date();
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().substring(0, 10);
+}
+
+function ccConstruirDatosDemo() {
+  var fases = [
+    { clave: "preventa", nombre: "Preventa", color: "#2a78d6", icono: "fa-bullseye" },
+    { clave: "venta", nombre: "Venta", color: "#00a65a", icono: "fa-briefcase" },
+    { clave: "firmas", nombre: "Firmas", color: "#4a3aa7", icono: "fa-gavel" },
+    { clave: "cancelado", nombre: "Cancelado / Perdido", color: "#dd4b39", icono: "fa-times-circle" }
+  ];
+
+  var etapas = [
+    { clave: "primer_contacto", nombre: "Primer Contacto", color: "#2a78d6", icono: "fa-phone", fase: "preventa" },
+    { clave: "segundo_contacto", nombre: "Segundo Contacto", color: "#eb6834", icono: "fa-phone-square", fase: "preventa" },
+    { clave: "cita", nombre: "Cita", color: "#1baf7a", icono: "fa-calendar", fase: "preventa" },
+    { clave: "prospecto", nombre: "Prospecto", color: "#eda100", icono: "fa-star", fase: "preventa" },
+    { clave: "cliente", nombre: "Cliente", color: "#e87ba4", icono: "fa-user", fase: "venta" },
+    { clave: "expediente_completo", nombre: "Expediente Completo", color: "#008300", icono: "fa-check-circle", fase: "venta" },
+    { clave: "documentos", nombre: "Documentos", color: "#8e7cc3", icono: "fa-file-text-o", fase: "firmas" },
+    { clave: "avaluo", nombre: "Avalúo", color: "#5b8def", icono: "fa-search", fase: "firmas" },
+    { clave: "fondeo", nombre: "Fondeo", color: "#00b8d9", icono: "fa-money", fase: "firmas" },
+    { clave: "firma", nombre: "Firma", color: "#6554c0", icono: "fa-pencil-square-o", fase: "firmas" },
+    { clave: "escrituras", nombre: "Escrituras", color: "#403294", icono: "fa-book", fase: "firmas" },
+    { clave: "expediente_fisico", nombre: "Expediente Físico", color: "#a54800", icono: "fa-archive", fase: "firmas" },
+    { clave: "visto_bueno", nombre: "Visto Bueno", color: "#ff991f", icono: "fa-thumbs-o-up", fase: "firmas" },
+    { clave: "finalizado", nombre: "Finalizado", color: "#00875a", icono: "fa-flag-checkered", fase: "firmas" },
+    { clave: "cancelado", nombre: "Cancelado / Perdido", color: "#dd4b39", icono: "fa-times-circle", fase: "cancelado" }
+  ];
+
+  var vendedores = ["Ana López", "Carlos Ruiz", "Diana Torres", "Marco Peña"];
+  var vendedorColores = { "Ana López": "#3c8dbc", "Carlos Ruiz": "#f39c12", "Diana Torres": "#00a65a", "Marco Peña": "#dd4b39" };
+  var plazaPorFraccionamiento = { "Villas del Sol": "Victoria", "Los Encinos": "Victoria", "Real del Valle": "San Luis Potosí" };
+
+  var clientes = [
+    { id: 1, etapa: "primer_contacto", docs: { avaluo: false, expediente: false }, nombre: "Roberto Salinas", telefono: "834 123 4501", lote: "Lote 12", fraccionamiento: "Villas del Sol", vendedor: "Ana López", monto: 480000, ultimoSeguimiento: ccFechaHace(0), seguimientos: [{ fecha: ccFechaHace(0), autor: "Ana López", canal: "Llamada", texto: "Contacto inicial por teléfono, interesado en modelo de 2 recámaras." }] },
+    { id: 2, etapa: "primer_contacto", docs: { avaluo: false, expediente: false }, nombre: "Laura Domínguez", telefono: "834 123 4502", lote: "Lote 3", fraccionamiento: "Real del Valle", vendedor: "Carlos Ruiz", monto: 520000, ultimoSeguimiento: ccFechaHace(4), seguimientos: [{ fecha: ccFechaHace(4), autor: "Carlos Ruiz", canal: "WhatsApp", texto: "Llamada inicial, pidió información por WhatsApp." }] },
+    { id: 3, etapa: "segundo_contacto", docs: { avaluo: false, expediente: false }, nombre: "Jorge Herrera", telefono: "834 123 4503", lote: "Lote 8", fraccionamiento: "Los Encinos", vendedor: "Diana Torres", monto: 610000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(6), autor: "Diana Torres", canal: "Llamada", texto: "Primer contacto, mostró interés en crédito Infonavit." }, { fecha: ccFechaHace(1), autor: "Diana Torres", canal: "Llamada", texto: "Segunda llamada, confirmó ingresos y envió documentos." }] },
+    { id: 4, etapa: "cita", docs: { avaluo: false, expediente: false }, nombre: "Fernando Cantú", telefono: "834 123 4505", lote: "Lote 15", fraccionamiento: "Real del Valle", vendedor: "Ana López", monto: 545000, fechaCita: ccFechaEn(2), ultimoSeguimiento: ccFechaHace(2), seguimientos: [{ fecha: ccFechaHace(2), autor: "Ana López", canal: "Llamada", texto: "Cita agendada para el sábado a las 11am en sala de ventas." }] },
+    { id: 5, etapa: "prospecto", docs: { avaluo: false, expediente: false }, nombre: "Miguel Ángel Soto", telefono: "834 123 4507", lote: "Lote 9", fraccionamiento: "Villas del Sol", vendedor: "Diana Torres", monto: 470000, ultimoSeguimiento: ccFechaHace(3), seguimientos: [{ fecha: ccFechaHace(9), autor: "Diana Torres", canal: "Visita", texto: "Visitó la casa muestra, le gustó la ubicación." }, { fecha: ccFechaHace(3), autor: "Diana Torres", canal: "Llamada", texto: "Está comparando con otro fraccionamiento, dar seguimiento." }] },
+    { id: 6, etapa: "cliente", docs: { avaluo: true, expediente: false }, nombre: "Ricardo Elizondo", telefono: "834 123 4509", lote: "Lote 18", fraccionamiento: "Los Encinos", vendedor: "Ana López", monto: 530000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Ana López", canal: "Correo", texto: "Ya es cliente, se solicitó el avalúo del lote." }] },
+    { id: 7, etapa: "cliente", docs: { avaluo: false, expediente: false }, nombre: "Alejandra Morales", telefono: "834 123 4510", lote: "Lote 4", fraccionamiento: "Villas del Sol", vendedor: "Carlos Ruiz", monto: 505000, ultimoSeguimiento: ccFechaHace(5), seguimientos: [{ fecha: ccFechaHace(5), autor: "Carlos Ruiz", canal: "Llamada", texto: "Se convirtió en cliente, pendiente de subir documentos." }] },
+    { id: 8, etapa: "expediente_completo", docs: { avaluo: true, expediente: true }, nombre: "Eduardo Guzmán", telefono: "834 123 4513", lote: "Lote 2", fraccionamiento: "Villas del Sol", vendedor: "Ana López", monto: 500000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Ana López", canal: "Visita", texto: "Expediente completo, listo para pasar a firmas." }] },
+    { id: 9, etapa: "documentos", docs: { avaluo: true, expediente: true }, nombre: "Sofía Reyes", telefono: "834 123 4516", lote: "Lote 5", fraccionamiento: "Villas del Sol", vendedor: "Ana López", monto: 500000, metaExtra: "Checklist de documentos en revisión", ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Ana López", canal: "Correo", texto: "Pasó a firmas, se está revisando el checklist de documentos." }] },
+    { id: 10, etapa: "avaluo", docs: { avaluo: true, expediente: true }, nombre: "Daniel Cabrera", telefono: "834 123 4517", lote: "Lote 22", fraccionamiento: "Real del Valle", vendedor: "Carlos Ruiz", monto: 610000, ultimoSeguimiento: ccFechaHace(2), seguimientos: [{ fecha: ccFechaHace(2), autor: "Carlos Ruiz", canal: "Llamada", texto: "Documentos aprobados, se solicitó el avalúo formal." }] },
+    { id: 11, etapa: "fondeo", docs: { avaluo: true, expediente: true }, nombre: "Cynthia Reséndez", telefono: "834 123 4518", lote: "Lote 14", fraccionamiento: "Los Encinos", vendedor: "Diana Torres", monto: 575000, ultimoSeguimiento: ccFechaHace(0), seguimientos: [{ fecha: ccFechaHace(0), autor: "Diana Torres", canal: "Correo", texto: "Avalúo listo, en trámite de fondeo con Notaría 3." }] },
+    { id: 12, etapa: "firma", docs: { avaluo: true, expediente: true }, nombre: "Óscar Villegas", telefono: "834 123 4519", lote: "Lote 7", fraccionamiento: "Villas del Sol", vendedor: "Marco Peña", monto: 495000, fechaFirma: ccFechaEn(7), ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Marco Peña", canal: "Llamada", texto: "Fondeo confirmado, se agendó fecha de firma." }] },
+    { id: 13, etapa: "escrituras", docs: { avaluo: true, expediente: true }, nombre: "Paola Siller", telefono: "834 123 4520", lote: "Lote 31", fraccionamiento: "Real del Valle", vendedor: "Ana López", monto: 640000, ultimoSeguimiento: ccFechaHace(2), seguimientos: [{ fecha: ccFechaHace(2), autor: "Ana López", canal: "Visita", texto: "Firma realizada, se subió la escritura al sistema." }] },
+    { id: 14, etapa: "expediente_fisico", docs: { avaluo: true, expediente: true }, nombre: "Rubén Garza", telefono: "834 123 4521", lote: "Lote 10", fraccionamiento: "Los Encinos", vendedor: "Carlos Ruiz", monto: 520000, ultimoSeguimiento: ccFechaHace(3), seguimientos: [{ fecha: ccFechaHace(3), autor: "Carlos Ruiz", canal: "Correo", texto: "Escritura lista, falta confirmar expediente físico." }] },
+    { id: 15, etapa: "visto_bueno", docs: { avaluo: true, expediente: true }, nombre: "Marisol Uribe", telefono: "834 123 4522", lote: "Lote 25", fraccionamiento: "Villas del Sol", vendedor: "Diana Torres", monto: 505000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Diana Torres", canal: "Correo", texto: "Expediente físico confirmado, en espera de visto bueno." }] },
+    { id: 16, etapa: "finalizado", docs: { avaluo: true, expediente: true }, nombre: "Álvaro Peña", telefono: "834 123 4523", lote: "Lote 17", fraccionamiento: "Real del Valle", vendedor: "Marco Peña", monto: 630000, ultimoSeguimiento: ccFechaHace(4), seguimientos: [{ fecha: ccFechaHace(4), autor: "Marco Peña", canal: "Visita", texto: "Visto bueno de Contraloría recibido, proceso finalizado." }] },
+    { id: 17, etapa: "cancelado", docs: { avaluo: false, expediente: false }, nombre: "Ramiro Cantú", telefono: "834 123 4524", lote: "Lote 24", fraccionamiento: "Villas del Sol", vendedor: "Carlos Ruiz", monto: 470000, motivoCancelacion: "Se fue con la competencia", ultimoSeguimiento: ccFechaHace(5), seguimientos: [{ fecha: ccFechaHace(9), autor: "Carlos Ruiz", canal: "Llamada", texto: "Interesado, comparando opciones de crédito." }, { fecha: ccFechaHace(5), autor: "Carlos Ruiz", canal: "Llamada", texto: "Se cancela: el cliente ya compró en otro fraccionamiento." }] }
+  ];
+
+  clientes.forEach(function (c) { c.etapaDesde = c.ultimoSeguimiento; });
+
+  return {
+    fases: fases, etapas: etapas, vendedores: vendedores, vendedorColores: vendedorColores,
+    plazaPorFraccionamiento: plazaPorFraccionamiento, slaProspectoDias: 2, clientes: clientes
+  };
+}
+
+function ccActualizarIndicadorDemo() {
+  var sub = document.getElementById("appMarcaSub");
+  var btn = document.getElementById("btnDemo");
+  if (!sub || !btn) return;
+  if (MODO_DEMO) {
+    sub.textContent = "Modo demo · datos de prueba, no se guardan cambios";
+    sub.classList.add("modo-demo-texto");
+    btn.classList.add("activo");
+    btn.title = "Salir del modo demo";
+  } else {
+    sub.textContent = "Grupo Caletto · vista de solo lectura";
+    sub.classList.remove("modo-demo-texto");
+    btn.classList.remove("activo");
+    btn.title = "Modo demo";
+  }
+}
+
+function ccActivarModoDemo() {
+  MODO_DEMO = true;
+  DATA = ccConstruirDatosDemo();
+  ultimaActualizacion = new Date();
+  ccPoblarFiltros();
+  ccRender();
+  ccActualizarIndicadorDemo();
+  ccMostrarPantalla("app");
+}
+
+function ccSalirModoDemo() {
+  MODO_DEMO = false;
+  DATA = null;
+  ccActualizarIndicadorDemo();
+  ccCargarDatos();
+}
+
+function ccAlternarModoDemo() {
+  if (MODO_DEMO) {
+    ccSalirModoDemo();
+  } else {
+    ccActivarModoDemo();
+  }
+}
 
 /* ----- Tabs (Resumen / Kanban) ----- */
 
@@ -59,10 +177,12 @@ function ccCargarDatos() {
       return res.json();
     })
     .then(function (json) {
+      MODO_DEMO = false;
       DATA = json;
       ultimaActualizacion = new Date();
       ccPoblarFiltros();
       ccRender();
+      ccActualizarIndicadorDemo();
       ccMostrarPantalla("app");
     })
     .catch(function (err) {
@@ -588,8 +708,20 @@ function ccAbrirDetalle(id) {
     '<div><div class="dl">Plaza</div><div class="dv">' + ccPlazaDe(d.fraccionamiento) + '</div></div>';
 
   var info = ccEtapaInfo(d.etapa);
-  document.getElementById("detEtapaBadge").innerHTML =
-    '<span class="etapa-badge" style="background:' + info.color + '22;color:' + info.color + '"><i class="fa ' + info.icono + '"></i> ' + info.nombre + '</span>';
+  var badgeEl = document.getElementById("detEtapaBadge");
+  if (MODO_DEMO) {
+    var opciones = DATA.etapas.map(function (e) {
+      return '<option value="' + e.clave + '"' + (e.clave === d.etapa ? " selected" : "") + '>' + e.nombre + '</option>';
+    }).join("");
+    badgeEl.innerHTML =
+      '<label style="display:block;font-size:0.78em;font-weight:700;color:var(--tinta-suave);margin-bottom:4px;">' +
+        '<i class="fa fa-flask"></i> Etapa (modo demo — puedes moverla)</label>' +
+      '<select id="detEtapaSelect" onchange="ccMoverEtapaDemo(' + d.id + ', this.value)" ' +
+        'style="width:100%;border:1px solid var(--linea);border-radius:8px;padding:8px 10px;font-size:0.95em;background:#fff;font-weight:700;color:' + info.color + '">' +
+        opciones + '</select>';
+  } else {
+    badgeEl.innerHTML = '<span class="etapa-badge" style="background:' + info.color + '22;color:' + info.color + '"><i class="fa ' + info.icono + '"></i> ' + info.nombre + '</span>';
+  }
 
   var docsEl = document.getElementById("detDocs");
   if (d.etapa === "cliente" || d.etapa === "expediente_completo") {
@@ -613,6 +745,18 @@ function ccAbrirDetalle(id) {
   }
 
   document.getElementById("overlayDetalle").classList.add("activo");
+}
+
+function ccMoverEtapaDemo(id, nuevaEtapa) {
+  if (!MODO_DEMO) return;
+  var d = DATA.clientes.find(function (x) { return x.id === id; });
+  if (!d || d.etapa === nuevaEtapa) return;
+  var hoy = new Date().toISOString().substring(0, 10);
+  d.etapa = nuevaEtapa;
+  d.etapaDesde = hoy;
+  d.ultimoSeguimiento = hoy;
+  ccRender();
+  ccAbrirDetalle(id);
 }
 
 function ccCerrarDetalle() {

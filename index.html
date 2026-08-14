@@ -50,6 +50,7 @@
   <div class="estado-texto" id="errorTexto">Ocurrió un problema al conectar.</div>
   <div class="estado-form">
     <button type="button" class="btn btn-primario" onclick="ccCargarDatos()">Reintentar</button>
+    <button type="button" class="btn btn-fantasma" onclick="ccActivarModoDemo()">Usar modo demo (datos de prueba)</button>
   </div>
 </div>
 
@@ -59,9 +60,12 @@
   <div class="app-cabecera">
     <div>
       <div class="app-marca"><img src="icons/icon-192.png" alt=""> Panorama Ejecutivo</div>
-      <div class="app-marca-sub">Grupo Caletto &middot; vista de solo lectura</div>
+      <div class="app-marca-sub" id="appMarcaSub">Grupo Caletto &middot; vista de solo lectura</div>
     </div>
     <div class="app-cabecera-btns">
+      <button type="button" class="app-btn-refrescar" id="btnDemo" onclick="ccAlternarModoDemo()" title="Modo demo">
+        <i class="fa fa-flask"></i>
+      </button>
       <button type="button" class="app-btn-refrescar" onclick="ccMostrarBienvenida()" title="Ayuda">
         <i class="fa fa-question-circle"></i>
       </button>

@@ -44,6 +44,8 @@ a{color:inherit;}
 .app-cabecera-btns{display:flex;align-items:center;gap:4px;}
 .app-btn-refrescar{background:none;border:none;color:var(--azul);font-size:1.3em;padding:6px;cursor:pointer;}
 .app-btn-refrescar.girando{animation:girar 0.8s linear infinite;}
+.app-btn-refrescar.activo{color:#fff;background:var(--naranja);border-radius:8px;}
+.modo-demo-texto{color:var(--naranja) !important;font-weight:700;}
 
 .tabs{display:flex;gap:4px;padding:0 16px;background:#fff;border-bottom:1px solid var(--linea);}
 .tab-btn{border:none;background:none;padding:12px 14px;font-size:0.95em;font-weight:700;color:var(--tinta-suave);
