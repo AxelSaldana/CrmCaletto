@@ -212,6 +212,11 @@ function ccEtapaInfo(clave) {
   return DATA.etapas[0];
 }
 
+function ccIndiceEtapa(clave) {
+  for (var i = 0; i < DATA.etapas.length; i++) if (DATA.etapas[i].clave === clave) return i;
+  return -1;
+}
+
 function ccPlazaDe(fraccionamiento) {
   return DATA.plazaPorFraccionamiento[fraccionamiento] || "";
 }
@@ -710,7 +715,11 @@ function ccAbrirDetalle(id) {
   var info = ccEtapaInfo(d.etapa);
   var badgeEl = document.getElementById("detEtapaBadge");
   if (MODO_DEMO) {
-    var opciones = DATA.etapas.map(function (e) {
+    var esCancelado = d.etapa === "cancelado";
+    var indiceActual = ccIndiceEtapa(d.etapa);
+    var opciones = DATA.etapas.filter(function (e) {
+      return esCancelado || ccIndiceEtapa(e.clave) >= indiceActual;
+    }).map(function (e) {
       return '<option value="' + e.clave + '"' + (e.clave === d.etapa ? " selected" : "") + '>' + e.nombre + '</option>';
     }).join("");
     badgeEl.innerHTML =
