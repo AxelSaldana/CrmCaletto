@@ -212,11 +212,6 @@ function ccEtapaInfo(clave) {
   return DATA.etapas[0];
 }
 
-function ccIndiceEtapa(clave) {
-  for (var i = 0; i < DATA.etapas.length; i++) if (DATA.etapas[i].clave === clave) return i;
-  return -1;
-}
-
 function ccPlazaDe(fraccionamiento) {
   return DATA.plazaPorFraccionamiento[fraccionamiento] || "";
 }
@@ -714,23 +709,7 @@ function ccAbrirDetalle(id) {
 
   var info = ccEtapaInfo(d.etapa);
   var badgeEl = document.getElementById("detEtapaBadge");
-  if (MODO_DEMO) {
-    var esCancelado = d.etapa === "cancelado";
-    var indiceActual = ccIndiceEtapa(d.etapa);
-    var opciones = DATA.etapas.filter(function (e) {
-      return esCancelado || ccIndiceEtapa(e.clave) >= indiceActual;
-    }).map(function (e) {
-      return '<option value="' + e.clave + '"' + (e.clave === d.etapa ? " selected" : "") + '>' + e.nombre + '</option>';
-    }).join("");
-    badgeEl.innerHTML =
-      '<label style="display:block;font-size:0.78em;font-weight:700;color:var(--tinta-suave);margin-bottom:4px;">' +
-        '<i class="fa fa-flask"></i> Etapa (modo demo — puedes moverla)</label>' +
-      '<select id="detEtapaSelect" onchange="ccMoverEtapaDemo(' + d.id + ', this.value)" ' +
-        'style="width:100%;border:1px solid var(--linea);border-radius:8px;padding:8px 10px;font-size:0.95em;background:#fff;font-weight:700;color:' + info.color + '">' +
-        opciones + '</select>';
-  } else {
-    badgeEl.innerHTML = '<span class="etapa-badge" style="background:' + info.color + '22;color:' + info.color + '"><i class="fa ' + info.icono + '"></i> ' + info.nombre + '</span>';
-  }
+  badgeEl.innerHTML = '<span class="etapa-badge" style="background:' + info.color + '22;color:' + info.color + '"><i class="fa ' + info.icono + '"></i> ' + info.nombre + '</span>';
 
   var docsEl = document.getElementById("detDocs");
   if (d.etapa === "cliente" || d.etapa === "expediente_completo") {
@@ -754,18 +733,6 @@ function ccAbrirDetalle(id) {
   }
 
   document.getElementById("overlayDetalle").classList.add("activo");
-}
-
-function ccMoverEtapaDemo(id, nuevaEtapa) {
-  if (!MODO_DEMO) return;
-  var d = DATA.clientes.find(function (x) { return x.id === id; });
-  if (!d || d.etapa === nuevaEtapa) return;
-  var hoy = new Date().toISOString().substring(0, 10);
-  d.etapa = nuevaEtapa;
-  d.etapaDesde = hoy;
-  d.ultimoSeguimiento = hoy;
-  ccRender();
-  ccAbrirDetalle(id);
 }
 
 function ccCerrarDetalle() {
