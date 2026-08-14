@@ -93,6 +93,10 @@ a{color:inherit;}
 .kb-t-monto{font-weight:700;color:var(--tinta-fuerte);}
 .kb-t-avatar{width:22px;height:22px;border-radius:50%;color:#fff;font-size:0.68em;font-weight:800;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dias-chip{display:inline-flex;align-items:center;gap:4px;font-size:0.78em;padding:2px 8px;border-radius:11px;font-weight:700;}
+.dias-chip.ok{background:var(--verde-suave);color:var(--verde);}
+.dias-chip.warn{background:var(--naranja-suave);color:var(--naranja);}
+.dias-chip.bad{background:var(--coral-suave);color:var(--coral);}
 
 .banner{padding:12px 16px;border-radius:12px;font-weight:700;font-size:1em;display:flex;align-items:center;
   justify-content:space-between;gap:10px;flex-wrap:wrap;}
@@ -176,6 +180,9 @@ a{color:inherit;}
 .seguimiento-item .t{font-size:0.98em;color:var(--tinta);}
 .canal-badge{display:inline-flex;align-items:center;gap:4px;font-size:0.75em;font-weight:700;padding:1px 7px;
   border-radius:9px;background:var(--azul-suave);color:var(--azul);}
+.seg-img{display:block;width:84px;height:84px;object-fit:cover;border-radius:8px;margin-top:8px;
+  cursor:zoom-in;border:1px solid var(--linea);transition:width .15s,height .15s;}
+.seg-img.seg-img-grande{width:100%;height:auto;max-height:340px;object-fit:contain;background:#f4f6f9;cursor:zoom-out;}
 .panel-acciones{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--linea);}
 .panel-acciones .btn{width:auto;}
 .tel-link{color:var(--azul);font-weight:700;text-decoration:none;}

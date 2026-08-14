@@ -198,6 +198,19 @@ function ccCargarDatos() {
 
 /* ----- Helpers de datos (equivalentes a crmventas.js) ----- */
 
+var CC_CANALES = [
+  { clave: "Llamada", icono: "fa-phone" },
+  { clave: "WhatsApp", icono: "fa-comments" },
+  { clave: "Correo", icono: "fa-envelope" },
+  { clave: "Visita", icono: "fa-home" },
+  { clave: "SMS", icono: "fa-mobile" }
+];
+
+function ccCanalInfo(clave) {
+  for (var i = 0; i < CC_CANALES.length; i++) if (CC_CANALES[i].clave === clave) return CC_CANALES[i];
+  return { clave: clave || "Otro", icono: "fa-comment-o" };
+}
+
 function ccDiasDesde(fechaStr) {
   var ms = new Date().getTime() - new Date(fechaStr + "T00:00:00").getTime();
   return Math.max(0, Math.round(ms / 86400000));
@@ -626,7 +639,14 @@ function ccAlertaSlaKanban(d) {
   return '<div class="kb-alerta-sla"><i class="fa fa-exclamation-triangle"></i> Sin seguimiento — ' + vencido + ' día(s) vencido' + (vencido === 1 ? "" : "s") + '</div>';
 }
 
+function ccChipDias(dias) {
+  if (dias <= 2) return "ok";
+  if (dias <= 5) return "warn";
+  return "bad";
+}
+
 function ccRenderTarjetaKanban(d) {
+  var dias = ccDiasDesde(d.ultimoSeguimiento);
   return '' +
     '<div class="kb-tarjeta" style="--col-color:' + ccEtapaInfo(d.etapa).color + '" onclick="ccAbrirDetalle(' + d.id + ')">' +
       '<div class="kb-t-nombre">' + d.nombre + '</div>' +
@@ -634,6 +654,7 @@ function ccRenderTarjetaKanban(d) {
       ccAlertaSlaKanban(d) +
       '<div class="kb-t-pie">' +
         '<span class="kb-t-avatar" style="background:' + ccVendedorColor(d.vendedor) + '" title="' + d.vendedor + '">' + ccIniciales(d.vendedor) + '</span>' +
+        '<span class="dias-chip ' + ccChipDias(dias) + '"><i class="fa fa-clock-o"></i> ' + dias + ' d</span>' +
         '<span class="kb-t-monto">' + ccMoneda(d.monto) + '</span>' +
       '</div>' +
     '</div>';
@@ -727,8 +748,10 @@ function ccAbrirDetalle(id) {
   } else {
     var ordenados = d.seguimientos.slice().sort(function (a, b) { return a.fecha < b.fecha ? 1 : -1; });
     hist.innerHTML = ordenados.map(function (s) {
-      return '<div class="seguimiento-item"><div class="f"><span class="canal-badge">' + s.canal + '</span>' + s.fecha + ' · ' + s.autor + '</div>' +
-        '<div class="t">' + s.texto + '</div></div>';
+      var canal = ccCanalInfo(s.canal);
+      var img = s.imagen ? '<img class="seg-img" src="' + s.imagen + '" alt="Adjunto" onclick="this.classList.toggle(\'seg-img-grande\')">' : '';
+      return '<div class="seguimiento-item"><div class="f"><span class="canal-badge"><i class="fa ' + canal.icono + '"></i> ' + s.canal + '</span>' + s.fecha + ' · ' + s.autor + '</div>' +
+        '<div class="t">' + s.texto + '</div>' + img + '</div>';
     }).join("");
   }
 
