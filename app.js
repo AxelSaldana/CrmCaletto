@@ -261,10 +261,15 @@ function ccValoresUnicos(extractor) {
   return lista.sort();
 }
 
+function ccPlazasDisponibles() {
+  if (DATA.plazasApi && DATA.plazasApi.length) return DATA.plazasApi.slice().sort();
+  return ccValoresUnicos(function (d) { return ccPlazaDe(d.fraccionamiento); });
+}
+
 function ccPoblarFiltros() {
   var selPlaza = document.getElementById("fPlaza");
   if (selPlaza.options.length <= 1) {
-    ccValoresUnicos(function (d) { return ccPlazaDe(d.fraccionamiento); }).forEach(function (p) {
+    ccPlazasDisponibles().forEach(function (p) {
       var op = document.createElement("option");
       op.value = p; op.textContent = p;
       selPlaza.appendChild(op);
