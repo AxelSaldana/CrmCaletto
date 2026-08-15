@@ -433,7 +433,7 @@ function ccRenderKpis(datos) {
 
   document.getElementById("kpis").innerHTML =
     '<div class="kpi"><div class="n">' + total + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoTotal) + '</div></div>' +
-    '<div class="kpi verde"><div class="n">' + cerrados.length + '</div><div class="l">Finalizadas</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
+    '<div class="kpi verde"><div class="n">' + cerrados.length + '</div><div class="l">Finalizado</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
     '<div class="kpi naranja"><div class="n">' + tasa + '%</div><div class="l">Conversión</div><div class="s">Global</div></div>' +
     '<div class="kpi coral"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
 }
