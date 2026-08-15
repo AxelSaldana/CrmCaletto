@@ -592,16 +592,18 @@ function ccRenderProximas(datos) {
 }
 
 function ccRenderRanking(datos) {
+  var datosActivos = datos.filter(function (d) { return d.etapa !== "cancelado"; });
+
   var vendedoresVisibles = [];
   var vistosVendedor = {};
-  datos.forEach(function (d) {
+  datosActivos.forEach(function (d) {
     var v = (d.vendedor || "").trim();
     if (v && !vistosVendedor[v]) { vistosVendedor[v] = true; vendedoresVisibles.push(v); }
   });
   vendedoresVisibles.sort();
 
   var filas = vendedoresVisibles.map(function (v) {
-    var items = datos.filter(function (d) { return (d.vendedor || "").trim() === v; });
+    var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; }).length;
 
