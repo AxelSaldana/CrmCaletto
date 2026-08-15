@@ -459,7 +459,7 @@ function ccRenderFirmasDetalle(datos) {
   var itemsFinal = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
   var infoFinal = ccEtapaInfo("finalizado");
   filas.push({
-    etapa: { nombre: "Escrituras / Finalizado", icono: infoFinal.icono, color: infoFinal.color },
+    etapa: { nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
     count: itemsFinal.length,
     monto: itemsFinal.reduce(function (s, d) { return s + d.monto; }, 0)
   });
@@ -685,7 +685,8 @@ function ccRenderTarjetaKanban(d) {
 }
 
 function ccRenderColumnaKanban(etapa, datos) {
-  var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
+  var claves = etapa.claves || [etapa.clave];
+  var items = datos.filter(function (d) { return claves.indexOf(d.etapa) !== -1; });
   var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
   var cuerpo = items.length
     ? items.map(ccRenderTarjetaKanban).join("")
@@ -718,6 +719,10 @@ function ccRenderKanban(datos) {
     var etapasColumnas = etapasFase;
     if (fase.clave === "preventa") {
       etapasColumnas = etapasColumnas.concat(DATA.etapas.filter(function (e) { return e.clave === "cancelado"; }));
+    } else if (fase.clave === "firmas") {
+      var infoFinal = ccEtapaInfo("finalizado");
+      etapasColumnas = etapasColumnas.filter(function (e) { return CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; })
+        .concat([{ clave: "finalizado", claves: CC_FIRMAS_ETAPA_FINAL, nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color }]);
     }
     var columnasHtml = etapasColumnas.map(function (etapa) { return ccRenderColumnaKanban(etapa, datos); }).join("");
 
