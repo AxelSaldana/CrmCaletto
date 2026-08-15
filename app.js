@@ -438,9 +438,12 @@ function ccRenderKpis(datos) {
     '<div class="kpi coral"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
 }
 
-function ccDesglosePorFase(items) {
+function ccDesglosePorFase(items, excluirFinalizadoDeFirmas) {
   return DATA.fases.map(function (fase) {
     var etapasFase = DATA.etapas.filter(function (e) { return e.fase === fase.clave; });
+    if (excluirFinalizadoDeFirmas && fase.clave === "firmas") {
+      etapasFase = etapasFase.filter(function (e) { return CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; });
+    }
     var itemsFase = items.filter(function (d) {
       return etapasFase.some(function (e) { return e.clave === d.etapa; });
     });
@@ -450,7 +453,7 @@ function ccDesglosePorFase(items) {
 }
 
 function ccRenderEmbudo(datos) {
-  var filas = ccDesglosePorFase(datos);
+  var filas = ccDesglosePorFase(datos, true);
   var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
 
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
@@ -589,10 +592,18 @@ function ccRenderProximas(datos) {
 }
 
 function ccRenderRanking(datos) {
-  var filas = ccValoresUnicos(function (d) { return d.vendedor; }).map(function (v) {
+  var vendedoresVisibles = [];
+  var vistosVendedor = {};
+  datos.forEach(function (d) {
+    var v = (d.vendedor || "").trim();
+    if (v && !vistosVendedor[v]) { vistosVendedor[v] = true; vendedoresVisibles.push(v); }
+  });
+  vendedoresVisibles.sort();
+
+  var filas = vendedoresVisibles.map(function (v) {
     var items = datos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
-    var finalizados = items.filter(function (d) { return d.etapa === "finalizado"; }).length;
+    var finalizados = items.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; }).length;
 
     var porPlaza = {};
     items.forEach(function (d) {
@@ -647,7 +658,7 @@ function ccFilaApilada(nombre, items) {
 }
 
 function ccRenderPlaza(datos) {
-  var plazas = Array.from(new Set(Object.values(DATA.plazaPorFraccionamiento)));
+  var plazas = Array.from(new Set(datos.map(function (d) { return ccPlazaDe(d.fraccionamiento); }).filter(Boolean))).sort();
   document.getElementById("porPlaza").innerHTML = ccLeyendaFases() + plazas.map(function (p) {
     var items = datos.filter(function (d) { return ccPlazaDe(d.fraccionamiento) === p; });
     return ccFilaApilada(p, items);
@@ -655,9 +666,9 @@ function ccRenderPlaza(datos) {
 }
 
 function ccRenderFraccionamiento(datos) {
-  var fraccs = Object.keys(DATA.plazaPorFraccionamiento);
+  var fraccs = Array.from(new Set(datos.map(function (d) { return (d.fraccionamiento || "").trim(); }).filter(Boolean))).sort();
   document.getElementById("porFracc").innerHTML = ccLeyendaFases() + fraccs.map(function (f) {
-    var items = datos.filter(function (d) { return d.fraccionamiento === f; });
+    var items = datos.filter(function (d) { return (d.fraccionamiento || "").trim() === f; });
     return ccFilaApilada(f, items);
   }).join("");
 }
