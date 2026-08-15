@@ -9,9 +9,13 @@ var API_URL = "/api/proxy";
 
 var DATA = null;
 var ultimaActualizacion = null;
-var kbFaseColapsada = {};
+// Preventa abierta por default (es la que se revisa mas seguido); Venta y
+// Firmas colapsadas para no pintar cientos de tarjetas de golpe si hay
+// muchos registros reales -- se expanden con un toque si hacen falta.
+var kbFaseColapsada = { venta: true, firmas: true };
 var ONBOARDING_KEY = "ccVistoBienvenida";
 var MODO_DEMO = false;
+var ccTabActiva = "resumen";
 
 /* ----- Modo demo: datos de prueba en memoria, sin llamar a la API -----
    Sirve para probar/mostrar la app sin depender del túnel/servidor real,
@@ -133,11 +137,15 @@ function ccAlternarModoDemo() {
 /* ----- Tabs (Resumen / Kanban) ----- */
 
 function ccCambiarTab(tab) {
+  ccTabActiva = tab;
   document.querySelectorAll(".tab-btn").forEach(function (btn) {
     btn.classList.toggle("activo", btn.getAttribute("data-tab") === tab);
   });
   document.getElementById("vistaResumen").style.display = (tab === "resumen") ? "" : "none";
   document.getElementById("vistaKanban").style.display = (tab === "kanban") ? "" : "none";
+  // El Kanban no se repinta en cada ccRender() mientras esta oculto (ver mas
+  // abajo), asi que al entrar a su pestaña lo refresca con el filtro actual.
+  if (tab === "kanban" && DATA) ccRenderKanban(ccDatosFiltrados());
 }
 
 /* ----- Bienvenida (primera vez, o bajo demanda con el botón de ayuda) ----- */
@@ -166,13 +174,35 @@ function ccMostrarPantalla(nombre) {
 
 /* ----- Carga de datos ----- */
 
+var ccCargando = false;
+var ccBuscarTimeout = null;
+
+function ccBuscarDebounced() {
+  // Evita reconstruir todas las listas en cada tecla mientras escribes --
+  // solo re-renderiza 200ms despues de la ultima tecla.
+  clearTimeout(ccBuscarTimeout);
+  ccBuscarTimeout = setTimeout(ccRender, 200);
+}
+
 function ccCargarDatos() {
+  // Evita que toques repetidos del boton de refrescar (o un cambio de
+  // pestaña que llegue mientras ya hay una peticion en curso) disparen
+  // varias peticiones encimadas hacia el CRM interno.
+  if (ccCargando) return;
+  ccCargando = true;
+
   var btn = document.getElementById("btnRefrescar");
   if (btn) btn.classList.add("girando");
   if (!DATA) ccMostrarPantalla("cargando");
 
-  fetch(API_URL)
+  // Si el tunel/servidor real no responde, que la app falle rapido en vez de
+  // quedarse en "Cargando..." para siempre.
+  var controlador = new AbortController();
+  var timeoutId = setTimeout(function () { controlador.abort(); }, 15000);
+
+  fetch(API_URL, { signal: controlador.signal })
     .then(function (res) {
+      clearTimeout(timeoutId);
       if (!res.ok) { throw { tipo: "http", status: res.status }; }
       return res.json();
     })
@@ -186,12 +216,15 @@ function ccCargarDatos() {
       ccMostrarPantalla("app");
     })
     .catch(function (err) {
+      clearTimeout(timeoutId);
       var msg = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
       if (err && err.tipo === "http") msg = "El servidor respondió con un error (" + err.status + ").";
+      else if (err && err.name === "AbortError") msg = "El servidor tardó demasiado en responder. Intenta de nuevo.";
       document.getElementById("errorTexto").textContent = msg;
       ccMostrarPantalla("error");
     })
     .finally(function () {
+      ccCargando = false;
       if (btn) btn.classList.remove("girando");
     });
 }
@@ -366,7 +399,30 @@ function ccDatosFiltrados() {
 
 /* ----- Render ----- */
 
+function ccAlternarFiltros() {
+  var panel = document.getElementById("filtrosPanel");
+  var chevron = document.getElementById("filtrosChevron");
+  var abierto = panel.style.display !== "none";
+  panel.style.display = abierto ? "none" : "block";
+  chevron.classList.toggle("rotado", !abierto);
+}
+
+function ccActualizarFiltrosBadge() {
+  var activos = 0;
+  if (document.getElementById("fBuscar").value.trim()) activos++;
+  if (document.getElementById("fPlaza").value) activos++;
+  if (document.getElementById("fFracc").value) activos++;
+  if (document.getElementById("fVendedor").value) activos++;
+  if (document.getElementById("fFechaDesde").value) activos++;
+  if (document.getElementById("fFechaHasta").value) activos++;
+
+  var badge = document.getElementById("filtrosBadge");
+  badge.textContent = activos;
+  badge.style.display = activos ? "inline-flex" : "none";
+}
+
 function ccRender() {
+  ccActualizarFiltrosBadge();
   var datos = ccDatosFiltrados();
   ccRenderBanner(datos);
   ccRenderKpis(datos);
@@ -379,7 +435,11 @@ function ccRender() {
   ccRenderFraccionamiento(datos);
   ccRenderMotivos(datos);
   ccRenderTiempoEtapas(datos);
-  ccRenderKanban(datos);
+  // El Kanban puede tener cientos de tarjetas con datos reales; si no se
+  // esta viendo (pestaña Resumen activa), no vale la pena reconstruir todo
+  // ese HTML en cada tecla de busqueda o cambio de filtro. Se repinta solo
+  // al entrar a su pestaña (ver ccCambiarTab).
+  if (ccTabActiva === "kanban") ccRenderKanban(datos);
 }
 
 var CC_ETAPAS_CITA = ["cita", "cita_realizada"];
@@ -876,8 +936,15 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+var CC_REFRESCO_MINIMO_MS = 60000;
+
 document.addEventListener("visibilitychange", function () {
-  if (document.visibilityState === "visible" && DATA) ccCargarDatos();
+  if (document.visibilityState !== "visible" || !DATA) return;
+  // Evita golpear el CRM interno cada vez que se cambia de app/pestaña y se
+  // regresa -- solo refresca solo si ya paso al menos un minuto desde la
+  // ultima vez (el boton de refrescar manual sigue funcionando siempre).
+  if (ultimaActualizacion && (new Date() - ultimaActualizacion) < CC_REFRESCO_MINIMO_MS) return;
+  ccCargarDatos();
 });
 
 /* ----- Atrapar el gesto de "atrás" del sistema -----

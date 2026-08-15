@@ -59,6 +59,15 @@ a{color:inherit;}
 
 #vistaResumen{display:flex;flex-direction:column;gap:16px;}
 
+.filtros-toggle{display:flex;align-items:center;gap:9px;width:100%;background:#fff;border:1px solid var(--linea);
+  border-radius:10px;padding:11px 14px;font-size:0.95em;font-weight:700;color:var(--tinta);cursor:pointer;}
+.filtros-toggle .fa-sliders{color:var(--azul);}
+.filtros-badge{display:none;align-items:center;justify-content:center;min-width:19px;height:19px;padding:0 5px;
+  border-radius:10px;background:var(--azul);color:#fff;font-size:0.75em;font-weight:800;}
+.filtros-chevron{margin-left:auto;color:var(--tinta-suave);transition:transform .15s;}
+.filtros-chevron.rotado{transform:rotate(180deg);}
+.filtros-panel{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
+
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
 .toolbar select{flex:1;min-width:100px;border:1px solid var(--linea);border-radius:8px;padding:9px 10px;font-size:16px;background:#fff;}
 .toolbar input[type=text]{flex:1;min-width:150px;border:1px solid var(--linea);border-radius:8px;padding:9px 12px;font-size:16px;background:#fff;}

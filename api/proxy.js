@@ -26,8 +26,22 @@ module.exports = async function handler(req, res) {
       headers: { Authorization: "Bearer " + apiToken },
     });
     var texto = await respuesta.text();
+
+    // Cachea en el edge de Vercel las respuestas buenas por 60s (hasta 120s
+    // adicionales sirviendo la version en cache mientras refresca en segundo
+    // plano). Asi, aunque varios celulares abran la app o cambien de pestaña
+    // seguido, el CRM interno (el que corre en tu maquina via el tunel) no
+    // recibe una consulta pesada por cada una -- como mucho una por minuto.
+    // Los errores (401, 500, caida del tunel) nunca se cachean.
+    if (respuesta.ok) {
+      res.setHeader("Cache-Control", "public, s-maxage=60, stale-while-revalidate=120");
+    } else {
+      res.setHeader("Cache-Control", "no-store");
+    }
+
     res.status(respuesta.status).send(texto);
   } catch (err) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(502).json({ error: "No se pudo conectar con el CRM interno.", detalle: String(err) });
   }
 };
