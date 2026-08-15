@@ -563,7 +563,18 @@ function ccRenderRanking(datos) {
     var items = datos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(function (d) { return d.etapa === "finalizado"; }).length;
-    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v) };
+
+    var porPlaza = {};
+    items.forEach(function (d) {
+      var p = ccPlazaDe(d.fraccionamiento) || "Sin plaza";
+      porPlaza[p] = (porPlaza[p] || 0) + 1;
+    });
+    var plazasTexto = Object.keys(porPlaza)
+      .sort(function (a, b) { return porPlaza[b] - porPlaza[a]; })
+      .map(function (p) { return p + ": " + porPlaza[p]; })
+      .join(" · ");
+
+    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v), plazasTexto: plazasTexto };
   }).sort(function (a, b) { return b.monto - a.monto; });
 
   var maxMonto = Math.max.apply(null, filas.map(function (f) { return f.monto; }).concat([1]));
@@ -575,6 +586,7 @@ function ccRenderRanking(datos) {
         '<div class="barra-cab"><span class="barra-nombre">' + f.vendedor + '</span>' +
         '<span class="barra-valor">' + ccMoneda(f.monto) + ' · ' + f.finalizados + ' fin.</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.color + '"></div></div>' +
+        (f.plazasTexto ? '<div class="ranking-plazas">' + f.plazasTexto + '</div>' : '') +
       '</div>';
   }).join("");
 }
