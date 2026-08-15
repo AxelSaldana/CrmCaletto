@@ -424,11 +424,11 @@ function ccRenderKpis(datos) {
   var sla = DATA.slaProspectoDias;
   var total = datos.length;
   var montoTotal = datos.reduce(function (s, d) { return s + d.monto; }, 0);
-  var cerrados = datos.filter(function (d) { return d.etapa === "finalizado"; });
+  var cerrados = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
   var montoCerrado = cerrados.reduce(function (s, d) { return s + d.monto; }, 0);
   var tasa = total ? Math.round((cerrados.length / total) * 100) : 0;
   var vencidos = datos.filter(function (d) {
-    return d.etapa !== "finalizado" && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
+    return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) === -1 && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
   });
 
   document.getElementById("kpis").innerHTML =
