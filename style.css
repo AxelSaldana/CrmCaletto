@@ -158,6 +158,9 @@ a{color:inherit;}
 .item:last-child{border-bottom:none;}
 .item.clicable{cursor:pointer;border-radius:8px;margin:0 -8px;padding:10px 8px;}
 .item.clicable:active{background:#f0f2f5;}
+.item.item-prioridad{background:var(--naranja-suave);}
+.item.item-prioridad.clicable:active{background:#fbe6c4;}
+.alerta-prioridad{color:var(--naranja);font-size:0.85em;}
 .item-nombre{font-weight:700;color:var(--tinta-fuerte);font-size:0.95em;}
 .item-sub{font-size:0.8em;color:var(--tinta-suave);margin-top:2px;}
 .item-chip{font-weight:700;font-size:0.78em;padding:4px 9px;border-radius:11px;white-space:nowrap;}

@@ -485,13 +485,18 @@ function ccRenderFirmasDetalle(datos) {
 
 var ccAlertasExpandido = false;
 
+var CC_ALERTAS_PRIORIDAD = ["prospecto", "cita", "cliente"];
+
 function ccRenderAlertas(datos) {
   var sla = DATA.slaProspectoDias;
   var vencidos = datos
-    .filter(function (d) { return d.etapa !== "finalizado" && d.etapa !== "cancelado"; })
-    .map(function (d) { return { d: d, dias: ccDiasDesde(d.ultimoSeguimiento) }; })
+    .filter(function (d) { return ccEtapaInfo(d.etapa).fase !== "firmas" && d.etapa !== "cancelado"; })
+    .map(function (d) { return { d: d, dias: ccDiasDesde(d.ultimoSeguimiento), prioridad: CC_ALERTAS_PRIORIDAD.indexOf(d.etapa) !== -1 }; })
     .filter(function (x) { return x.dias > sla; })
-    .sort(function (a, b) { return b.dias - a.dias; });
+    .sort(function (a, b) {
+      if (a.prioridad !== b.prioridad) return a.prioridad ? -1 : 1;
+      return b.dias - a.dias;
+    });
 
   var cont = document.getElementById("alertas");
   if (!vencidos.length) {
@@ -504,9 +509,10 @@ function ccRenderAlertas(datos) {
   var filas = mostrar.map(function (x) {
     var info = ccEtapaInfo(x.d.etapa);
     var clase = x.dias > sla + 3 ? "bad" : "warn";
+    var prioridad = x.prioridad ? '<i class="fa fa-star alerta-prioridad" title="Cerca de concretarse"></i> ' : "";
     return '' +
-      '<div class="item clicable" onclick="ccAbrirDetalle(' + x.d.id + ')">' +
-        '<div><div class="item-nombre">' + x.d.nombre + '</div><div class="item-sub">' + info.nombre + ' · ' + x.d.vendedor + '</div></div>' +
+      '<div class="item clicable' + (x.prioridad ? ' item-prioridad' : '') + '" onclick="ccAbrirDetalle(' + x.d.id + ')">' +
+        '<div><div class="item-nombre">' + prioridad + x.d.nombre + '</div><div class="item-sub">' + info.nombre + ' · ' + x.d.vendedor + '</div></div>' +
         '<span class="item-chip ' + clase + '">' + x.dias + ' d</span>' +
       '</div>';
   }).join("");
