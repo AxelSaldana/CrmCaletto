@@ -86,10 +86,10 @@
       <input type="text" id="fBuscar" placeholder="Buscar cliente, lote..." oninput="ccRender()">
     </div>
     <div class="toolbar">
-      <select id="fPlaza" onchange="ccFiltrarFraccPorPlaza(); ccRender()">
+      <select id="fPlaza" onchange="ccFiltrarFraccPorPlaza(); ccFiltrarVendedorPorPlazaFracc(); ccRender()">
         <option value="">Todas las plazas</option>
       </select>
-      <select id="fFracc" onchange="ccRender()"><option value="">Todos los fraccionamientos</option></select>
+      <select id="fFracc" onchange="ccFiltrarVendedorPorPlazaFracc(); ccRender()"><option value="">Todos los fraccionamientos</option></select>
       <select id="fVendedor" onchange="ccRender()"><option value="">Todos los vendedores</option></select>
     </div>
     <div class="toolbar-fechas">

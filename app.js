@@ -276,16 +276,33 @@ function ccPoblarFiltros() {
     });
   }
 
-  var selVendedor = document.getElementById("fVendedor");
-  if (selVendedor.options.length <= 1) {
-    ccValoresUnicos(function (d) { return d.vendedor; }).forEach(function (v) {
-      var op = document.createElement("option");
-      op.value = v; op.textContent = v;
-      selVendedor.appendChild(op);
-    });
-  }
-
   ccFiltrarFraccPorPlaza();
+  ccFiltrarVendedorPorPlazaFracc();
+}
+
+function ccFiltrarVendedorPorPlazaFracc() {
+  var selVendedor = document.getElementById("fVendedor");
+  var plaza = document.getElementById("fPlaza").value;
+  var fraccionamiento = document.getElementById("fFracc").value;
+  var valorActual = selVendedor.value;
+
+  var vistos = {};
+  var vendedores = [];
+  DATA.clientes.forEach(function (d) {
+    if (fraccionamiento && (d.fraccionamiento || "").trim() !== fraccionamiento) return;
+    if (plaza && ccPlazaDe(d.fraccionamiento) !== plaza) return;
+    var v = (d.vendedor || "").trim();
+    if (v && !vistos[v]) { vistos[v] = true; vendedores.push(v); }
+  });
+  vendedores.sort();
+
+  selVendedor.innerHTML = '<option value="">Todos los vendedores</option>';
+  vendedores.forEach(function (v) {
+    var op = document.createElement("option");
+    op.value = v; op.textContent = v;
+    selVendedor.appendChild(op);
+  });
+  if (vendedores.indexOf(valorActual) !== -1) selVendedor.value = valorActual;
 }
 
 function ccFiltrarFraccPorPlaza() {
