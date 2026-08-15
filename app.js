@@ -446,12 +446,22 @@ function ccRenderEmbudo(datos) {
   }).join("");
 }
 
+var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
+
 function ccRenderFirmasDetalle(datos) {
-  var etapasFirmas = DATA.etapas.filter(function (e) { return e.fase === "firmas"; });
+  var etapasFirmas = DATA.etapas.filter(function (e) { return e.fase === "firmas" && CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; });
   var filas = etapasFirmas.map(function (etapa) {
     var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
     var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
     return { etapa: etapa, count: items.length, monto: monto };
+  });
+
+  var itemsFinal = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var infoFinal = ccEtapaInfo("finalizado");
+  filas.push({
+    etapa: { nombre: "Escrituras / Finalizado", icono: infoFinal.icono, color: infoFinal.color },
+    count: itemsFinal.length,
+    monto: itemsFinal.reduce(function (s, d) { return s + d.monto; }, 0)
   });
 
   var cont = document.getElementById("firmasDetalle");
@@ -613,28 +623,13 @@ function ccRenderMotivos(datos) {
     return;
   }
 
-  var conteos = {};
-  cancelados.forEach(function (d) {
-    var motivo = d.motivoCancelacion || "Sin especificar";
-    conteos[motivo] = (conteos[motivo] || 0) + 1;
-  });
-  var filas = Object.keys(conteos).map(function (m) { return { motivo: m, count: conteos[m] }; })
-    .sort(function (a, b) { return b.count - a.count; });
-  var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
-
-  var barras = filas.map(function (f) {
-    var pct = Math.max(Math.round((f.count / maxCount) * 100), 6);
-    return '<div class="barra-fila"><div class="barra-cab"><span class="barra-nombre">' + f.motivo + '</span></div>' +
-      '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:#dd4b39"></div></div></div>';
-  }).join("");
-
   var lista = cancelados.map(function (d) {
     return '<div class="item clicable" onclick="ccAbrirDetalle(' + d.id + ')">' +
-      '<div><div class="item-nombre">' + d.nombre + '</div><div class="item-sub">' + (d.motivoCancelacion || "Sin especificar") + ' · ' + d.vendedor + '</div></div>' +
+      '<div><div class="item-nombre">' + d.nombre + '</div><div class="item-sub">' + d.vendedor + ' · toca para ver el motivo</div></div>' +
       '<span class="item-chip bad">' + ccMoneda(d.monto) + '</span></div>';
   }).join("");
 
-  cont.innerHTML = barras + '<div style="font-weight:800;color:var(--tinta-fuerte);margin:14px 0 4px;font-size:0.9em;">Clientes cancelados</div>' + lista;
+  cont.innerHTML = lista;
 }
 
 function ccRenderTiempoEtapas(datos) {
@@ -759,7 +754,8 @@ function ccAbrirDetalle(id) {
 
   var info = ccEtapaInfo(d.etapa);
   var badgeEl = document.getElementById("detEtapaBadge");
-  badgeEl.innerHTML = '<span class="etapa-badge" style="background:' + info.color + '22;color:' + info.color + '"><i class="fa ' + info.icono + '"></i> ' + info.nombre + '</span>';
+  badgeEl.innerHTML = '<span class="etapa-badge" style="background:' + info.color + '22;color:' + info.color + '"><i class="fa ' + info.icono + '"></i> ' + info.nombre + '</span>' +
+    (d.etapa === "cancelado" ? '<div class="motivo-cancelacion"><i class="fa fa-info-circle"></i> ' + (d.motivoCancelacion || "Sin especificar") + '</div>' : "");
 
   var docsEl = document.getElementById("detDocs");
   if (d.etapa === "cliente" || d.etapa === "expediente_completo") {

@@ -183,6 +183,7 @@ a{color:inherit;}
 .detalle-grid .dl{color:var(--tinta-suave);font-size:0.78em;text-transform:uppercase;letter-spacing:.02em;}
 .detalle-grid .dv{color:var(--tinta-fuerte);font-weight:700;}
 .etapa-badge{display:inline-flex;align-items:center;gap:7px;font-weight:700;padding:6px 12px;border-radius:20px;font-size:0.92em;margin-bottom:14px;}
+.motivo-cancelacion{display:flex;align-items:center;gap:7px;color:var(--coral);background:var(--coral-suave);font-size:0.88em;font-weight:600;padding:8px 12px;border-radius:8px;margin:-6px 0 14px;}
 .docs-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
 .doc-pill{display:inline-flex;align-items:center;gap:4px;font-size:0.8em;font-weight:700;padding:3px 9px;border-radius:10px;}
 .doc-pill.ok{background:var(--verde-suave);color:var(--verde);}
