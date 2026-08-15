@@ -382,15 +382,17 @@ function ccRender() {
   ccRenderKanban(datos);
 }
 
+var CC_ETAPAS_CITA = ["cita", "cita_realizada"];
+
 function ccRenderBanner(datos) {
   var sla = DATA.slaProspectoDias;
   var vencidos = datos.filter(function (d) {
-    return d.etapa !== "finalizado" && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
+    return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) === -1 && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
   }).length;
 
   var hoy = new Date().toISOString().substring(0, 10);
   var fechasVencidas = datos.filter(function (d) {
-    return (d.etapa === "cita" && d.fechaCita && d.fechaCita < hoy) ||
+    return (CC_ETAPAS_CITA.indexOf(d.etapa) !== -1 && d.fechaCita && d.fechaCita < hoy) ||
       (d.etapa === "firma" && d.fechaFirma && d.fechaFirma < hoy);
   }).length;
 
@@ -454,14 +456,26 @@ function ccDesglosePorFase(items, excluirFinalizadoDeFirmas) {
 
 function ccRenderEmbudo(datos) {
   var filas = ccDesglosePorFase(datos, true);
+
+  var infoFinal = ccEtapaInfo("finalizado");
+  var itemsFinal = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var filaFinalizado = {
+    fase: { clave: "finalizado", nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
+    count: itemsFinal.length,
+    monto: itemsFinal.reduce(function (s, d) { return s + d.monto; }, 0)
+  };
+  var idxFirmas = -1;
+  for (var i = 0; i < filas.length; i++) { if (filas[i].fase.clave === "firmas") { idxFirmas = i; break; } }
+  filas.splice(idxFirmas + 1, 0, filaFinalizado);
+
   var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
 
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
     var esDemo = f.fase.clave === "preventa";
     var conv = "";
-    if (i > 0) {
-      var anterior = filas[i - 1];
+    var anterior = filas[i - 1];
+    if (anterior && f.fase.clave !== "cancelado") {
       if (anterior.fase.clave === "preventa") {
         conv = '<div class="conversion">Preventa aún no está conectada a datos reales — no comparable</div>';
       } else {
@@ -518,7 +532,7 @@ function ccRenderFirmasDetalle(datos) {
 
 var ccAlertasExpandido = false;
 
-var CC_ALERTAS_PRIORIDAD = ["prospecto", "cita", "cliente"];
+var CC_ALERTAS_PRIORIDAD = ["prospecto", "cita", "cliente", "cita_realizada", "negociacion"];
 
 function ccRenderAlertas(datos) {
   var sla = DATA.slaProspectoDias;
@@ -565,7 +579,7 @@ function ccToggleAlertas() {
 }
 
 function ccRenderProximas(datos) {
-  var citas = datos.filter(function (d) { return d.etapa === "cita" && d.fechaCita; })
+  var citas = datos.filter(function (d) { return CC_ETAPAS_CITA.indexOf(d.etapa) !== -1 && d.fechaCita; })
     .map(function (d) { return { d: d, fecha: d.fechaCita, tipo: "Cita", icono: "fa-calendar" }; });
   var firmas = datos.filter(function (d) { return d.etapa === "firma" && d.fechaFirma; })
     .map(function (d) { return { d: d, fecha: d.fechaFirma, tipo: "Firma", icono: "fa-pencil-square-o" }; });
@@ -693,7 +707,7 @@ function ccRenderMotivos(datos) {
 }
 
 function ccRenderTiempoEtapas(datos) {
-  var filas = DATA.etapas.filter(function (e) { return e.clave !== "cancelado"; }).map(function (etapa) {
+  var filas = DATA.etapas.filter(function (e) { return e.clave !== "cancelado" && e.clave !== "finalizado"; }).map(function (etapa) {
     var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
     var promedio = items.length
       ? Math.round(items.reduce(function (s, d) { return s + ccDiasDesde(d.etapaDesde); }, 0) / items.length)
