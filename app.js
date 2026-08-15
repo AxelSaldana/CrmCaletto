@@ -266,7 +266,20 @@ function ccPlazasDisponibles() {
   return ccValoresUnicos(function (d) { return ccPlazaDe(d.fraccionamiento); });
 }
 
+function ccReconstruirPlazaPorFraccionamiento() {
+  if (!DATA.plazaPorFraccionamiento) DATA.plazaPorFraccionamiento = {};
+  DATA.clientes.forEach(function (d) {
+    var fracc = (d.fraccionamiento || "").trim();
+    var plaza = (d.plaza || "").trim();
+    if (fracc && plaza && plaza !== "Sin plaza" && !DATA.plazaPorFraccionamiento[fracc]) {
+      DATA.plazaPorFraccionamiento[fracc] = plaza;
+    }
+  });
+}
+
 function ccPoblarFiltros() {
+  ccReconstruirPlazaPorFraccionamiento();
+
   var selPlaza = document.getElementById("fPlaza");
   if (selPlaza.options.length <= 1) {
     ccPlazasDisponibles().forEach(function (p) {
