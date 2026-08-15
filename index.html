@@ -92,6 +92,23 @@
       <select id="fFracc" onchange="ccRender()"><option value="">Todos los fraccionamientos</option></select>
       <select id="fVendedor" onchange="ccRender()"><option value="">Todos los vendedores</option></select>
     </div>
+    <div class="toolbar-fechas">
+      <div class="toolbar-fechas-grupo">
+        <i class="fa fa-calendar toolbar-fechas-icono"></i>
+        <label class="toolbar-fecha-label">
+          <span>Desde</span>
+          <input type="date" id="fFechaDesde" onchange="ccRender()">
+        </label>
+        <i class="fa fa-long-arrow-right toolbar-fechas-flecha"></i>
+        <label class="toolbar-fecha-label">
+          <span>Hasta</span>
+          <input type="date" id="fFechaHasta" onchange="ccRender()">
+        </label>
+      </div>
+      <button type="button" class="btn-limpiar-fechas" onclick="ccLimpiarFechas()" title="Quitar filtro de fechas">
+        <i class="fa fa-times-circle"></i>
+      </button>
+    </div>
 
     <div class="banner" id="banner"></div>
 

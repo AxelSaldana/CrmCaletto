@@ -307,15 +307,25 @@ function ccFiltrarFraccPorPlaza() {
   if (fraccionamientos.indexOf(valorActual) !== -1) selFracc.value = valorActual;
 }
 
+function ccLimpiarFechas() {
+  document.getElementById("fFechaDesde").value = "";
+  document.getElementById("fFechaHasta").value = "";
+  ccRender();
+}
+
 function ccDatosFiltrados() {
   var texto = (document.getElementById("fBuscar").value || "").toLowerCase().trim();
   var plaza = document.getElementById("fPlaza").value;
   var fraccionamiento = document.getElementById("fFracc").value;
   var vendedor = document.getElementById("fVendedor").value;
+  var fechaDesde = document.getElementById("fFechaDesde").value;
+  var fechaHasta = document.getElementById("fFechaHasta").value;
   return DATA.clientes.filter(function (d) {
     if (vendedor && (d.vendedor || "").trim() !== vendedor) return false;
     if (fraccionamiento && (d.fraccionamiento || "").trim() !== fraccionamiento) return false;
     if (plaza && ccPlazaDe(d.fraccionamiento) !== plaza) return false;
+    if (fechaDesde && (d.etapaDesde || "") < fechaDesde) return false;
+    if (fechaHasta && (d.etapaDesde || "") > fechaHasta) return false;
     if (texto) {
       var campo = (d.nombre + " " + (d.lote || "") + " " + (d.fraccionamiento || "")).toLowerCase();
       if (campo.indexOf(texto) === -1) return false;
@@ -614,9 +624,8 @@ function ccRenderMotivos(datos) {
 
   var barras = filas.map(function (f) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), 6);
-    return '<div class="barra-fila"><div class="barra-cab"><span class="barra-nombre">' + f.motivo + '</span>' +
-      '<span class="barra-valor">' + f.count + ' caso(s)</span></div>' +
-      '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:#dd4b39">' + f.count + '</div></div></div>';
+    return '<div class="barra-fila"><div class="barra-cab"><span class="barra-nombre">' + f.motivo + '</span></div>' +
+      '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:#dd4b39"></div></div></div>';
   }).join("");
 
   var lista = cancelados.map(function (d) {
