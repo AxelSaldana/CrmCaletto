@@ -509,10 +509,9 @@ function ccRenderAlertas(datos) {
   var filas = mostrar.map(function (x) {
     var info = ccEtapaInfo(x.d.etapa);
     var clase = x.dias > sla + 3 ? "bad" : "warn";
-    var prioridad = x.prioridad ? '<i class="fa fa-star alerta-prioridad" title="Cerca de concretarse"></i> ' : "";
     return '' +
       '<div class="item clicable' + (x.prioridad ? ' item-prioridad' : '') + '" onclick="ccAbrirDetalle(' + x.d.id + ')">' +
-        '<div><div class="item-nombre">' + prioridad + x.d.nombre + '</div><div class="item-sub">' + info.nombre + ' · ' + x.d.vendedor + '</div></div>' +
+        '<div><div class="item-nombre">' + x.d.nombre + '</div><div class="item-sub">' + info.nombre + ' · ' + x.d.vendedor + '</div></div>' +
         '<span class="item-chip ' + clase + '">' + x.dias + ' d</span>' +
       '</div>';
   }).join("");
