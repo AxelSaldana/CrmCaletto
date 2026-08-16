@@ -67,6 +67,20 @@ function ccBuscarDebounced() {
   ccBuscarTimeout = setTimeout(ccRender, 200);
 }
 
+// Preventa (Primer contacto, Cita realizada, Negociación) sigue siendo
+// datos de ejemplo hardcodeados en el backend, no conectados a la BD real
+// -- se quitan por completo aqui para que la app nunca mezcle numeros
+// falsos con los reales.
+function ccQuitarDatosDeEjemplo() {
+  if (!DATA) return;
+  DATA.clientes = (DATA.clientes || []).filter(function (d) {
+    var info = DATA.etapas.filter(function (e) { return e.clave === d.etapa; })[0];
+    return !info || info.fase !== "preventa";
+  });
+  DATA.fases = (DATA.fases || []).filter(function (f) { return f.clave !== "preventa"; });
+  DATA.etapas = (DATA.etapas || []).filter(function (e) { return e.fase !== "preventa"; });
+}
+
 function ccCargarDatos() {
   // Evita que toques repetidos del boton de refrescar (o un cambio de
   // pestaña que llegue mientras ya hay una peticion en curso) disparen
@@ -98,6 +112,7 @@ function ccCargarDatos() {
     })
     .then(function (json) {
       DATA = json;
+      ccQuitarDatosDeEjemplo();
       ultimaActualizacion = new Date();
       ccAsignarColoresVendedores();
       ccPoblarFiltros();
@@ -574,21 +589,15 @@ function ccRenderEmbudo(datos) {
 
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
-    var esDemo = f.fase.clave === "preventa";
     var conv = "";
     var anterior = filas[i - 1];
     if (anterior && f.fase.clave !== "cancelado") {
-      if (anterior.fase.clave === "preventa") {
-        conv = '<div class="conversion">Preventa aún no está conectada a datos reales — no comparable</div>';
-      } else {
-        var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
-        conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
-      }
+      var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
+      conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
     }
     return conv +
       '<div class="barra-fila">' +
-        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre +
-          (esDemo ? ' <span class="etiqueta-demo">ejemplo</span>' : '') + '</span>' +
+        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre + '</span>' +
         '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.fase.color + '">' + (f.count || "") + '</div></div>' +
       '</div>';
@@ -634,18 +643,13 @@ function ccRenderFirmasDetalle(datos) {
 
 var ccAlertasExpandido = false;
 
-var CC_ALERTAS_PRIORIDAD = ["prospecto", "cita", "cliente", "cita_realizada", "negociacion"];
-
 function ccRenderAlertas(datos) {
   var sla = DATA.slaProspectoDias;
   var vencidos = datos
     .filter(function (d) { return ccEtapaInfo(d.etapa).fase !== "firmas" && d.etapa !== "cancelado"; })
-    .map(function (d) { return { d: d, dias: ccDiasDesde(d.ultimoSeguimiento), prioridad: CC_ALERTAS_PRIORIDAD.indexOf(d.etapa) !== -1 }; })
+    .map(function (d) { return { d: d, dias: ccDiasDesde(d.ultimoSeguimiento) }; })
     .filter(function (x) { return x.dias > sla; })
-    .sort(function (a, b) {
-      if (a.prioridad !== b.prioridad) return a.prioridad ? -1 : 1;
-      return b.dias - a.dias;
-    });
+    .sort(function (a, b) { return b.dias - a.dias; });
 
   var cont = document.getElementById("alertas");
   if (!vencidos.length) {
@@ -659,7 +663,7 @@ function ccRenderAlertas(datos) {
     var info = ccEtapaInfo(x.d.etapa);
     var clase = x.dias > sla + 3 ? "bad" : "warn";
     return '' +
-      '<div class="item clicable' + (x.prioridad ? ' item-prioridad' : '') + '" onclick="ccAbrirDetalle(' + x.d.id + ')">' +
+      '<div class="item clicable" onclick="ccAbrirDetalle(' + x.d.id + ')">' +
         '<div><div class="item-nombre">' + x.d.nombre + '</div><div class="item-sub">' + info.nombre + ' · ' + x.d.vendedor + '</div></div>' +
         '<span class="item-chip ' + clase + '">' + x.dias + ' d</span>' +
       '</div>';
