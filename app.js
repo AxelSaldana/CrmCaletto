@@ -639,10 +639,19 @@ function ccToggleAlertas() {
 }
 
 function ccRenderProximas(datos) {
+  var hoy = new Date().toISOString().substring(0, 10);
+
   var citas = datos.filter(function (d) { return CC_ETAPAS_CITA.indexOf(d.etapa) !== -1 && d.fechaCita; })
     .map(function (d) { return { d: d, fecha: d.fechaCita, tipo: "Cita", icono: "fa-calendar" }; });
-  var firmas = datos.filter(function (d) { return d.etapa === "firma" && d.fechaFirma; })
-    .map(function (d) { return { d: d, fecha: d.fechaFirma, tipo: "Firma", icono: "fa-pencil-square-o" }; });
+  // fecha_firma a veces se captura de antemano (agendada) y a veces de forma
+  // retroactiva (ya que se firmó) -- para cuando eso pasa, el cliente ya
+  // avanzo a Escrituras/Finalizado y ya no esta en la etapa "Firma". Por eso
+  // aqui no se exige una etapa exacta: cualquier fecha de firma que sea hoy
+  // o futura cuenta como "proxima", sin importar donde este parado ahora
+  // dentro de Firmas.
+  var firmas = datos.filter(function (d) {
+    return d.fechaFirma && d.fechaFirma >= hoy && ccEtapaInfo(d.etapa).fase === "firmas";
+  }).map(function (d) { return { d: d, fecha: d.fechaFirma, tipo: "Firma", icono: "fa-pencil-square-o" }; });
 
   var todas = citas.concat(firmas).sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; });
   var cont = document.getElementById("proximas");
@@ -651,7 +660,6 @@ function ccRenderProximas(datos) {
     return;
   }
 
-  var hoy = new Date().toISOString().substring(0, 10);
   cont.innerHTML = todas.slice(0, 6).map(function (x) {
     var diasFaltan = Math.round((new Date(x.fecha + "T00:00:00").getTime() - new Date(hoy + "T00:00:00").getTime()) / 86400000);
     var etiqueta = diasFaltan < 0 ? "Vencida" : diasFaltan === 0 ? "Hoy" : diasFaltan === 1 ? "Mañana" : "En " + diasFaltan + " días";
