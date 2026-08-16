@@ -14,125 +14,8 @@ var ultimaActualizacion = null;
 // muchos registros reales -- se expanden con un toque si hacen falta.
 var kbFaseColapsada = { venta: true, firmas: true };
 var ONBOARDING_KEY = "ccVistoBienvenida";
-var MODO_DEMO = false;
 var ccTabActiva = "resumen";
-
-/* ----- Modo demo: datos de prueba en memoria, sin llamar a la API -----
-   Sirve para probar/mostrar la app sin depender del túnel/servidor real,
-   y permite "mover" tarjetas de etapa libremente porque nada de esto se
-   guarda en ningún lado — es puro estado local del navegador. */
-
-function ccFechaHace(dias) {
-  var d = new Date();
-  d.setDate(d.getDate() - dias);
-  return d.toISOString().substring(0, 10);
-}
-
-function ccFechaEn(dias) {
-  var d = new Date();
-  d.setDate(d.getDate() + dias);
-  return d.toISOString().substring(0, 10);
-}
-
-function ccConstruirDatosDemo() {
-  var fases = [
-    { clave: "preventa", nombre: "Preventa", color: "#2a78d6", icono: "fa-bullseye" },
-    { clave: "venta", nombre: "Venta", color: "#00a65a", icono: "fa-briefcase" },
-    { clave: "firmas", nombre: "Firmas", color: "#4a3aa7", icono: "fa-gavel" },
-    { clave: "cancelado", nombre: "Cancelado / Perdido", color: "#dd4b39", icono: "fa-times-circle" }
-  ];
-
-  var etapas = [
-    { clave: "primer_contacto", nombre: "Primer Contacto", color: "#2a78d6", icono: "fa-phone", fase: "preventa" },
-    { clave: "segundo_contacto", nombre: "Segundo Contacto", color: "#eb6834", icono: "fa-phone-square", fase: "preventa" },
-    { clave: "cita", nombre: "Cita", color: "#1baf7a", icono: "fa-calendar", fase: "preventa" },
-    { clave: "prospecto", nombre: "Prospecto", color: "#eda100", icono: "fa-star", fase: "preventa" },
-    { clave: "cliente", nombre: "Cliente", color: "#e87ba4", icono: "fa-user", fase: "venta" },
-    { clave: "expediente_completo", nombre: "Expediente Completo", color: "#008300", icono: "fa-check-circle", fase: "venta" },
-    { clave: "documentos", nombre: "Documentos", color: "#8e7cc3", icono: "fa-file-text-o", fase: "firmas" },
-    { clave: "avaluo", nombre: "Avalúo", color: "#5b8def", icono: "fa-search", fase: "firmas" },
-    { clave: "fondeo", nombre: "Fondeo", color: "#00b8d9", icono: "fa-money", fase: "firmas" },
-    { clave: "firma", nombre: "Firma", color: "#6554c0", icono: "fa-pencil-square-o", fase: "firmas" },
-    { clave: "escrituras", nombre: "Escrituras", color: "#403294", icono: "fa-book", fase: "firmas" },
-    { clave: "expediente_fisico", nombre: "Expediente Físico", color: "#a54800", icono: "fa-archive", fase: "firmas" },
-    { clave: "visto_bueno", nombre: "Visto Bueno", color: "#ff991f", icono: "fa-thumbs-o-up", fase: "firmas" },
-    { clave: "finalizado", nombre: "Finalizado", color: "#00875a", icono: "fa-flag-checkered", fase: "firmas" },
-    { clave: "cancelado", nombre: "Cancelado / Perdido", color: "#dd4b39", icono: "fa-times-circle", fase: "cancelado" }
-  ];
-
-  var vendedores = ["Ana López", "Carlos Ruiz", "Diana Torres", "Marco Peña"];
-  var vendedorColores = { "Ana López": "#3c8dbc", "Carlos Ruiz": "#f39c12", "Diana Torres": "#00a65a", "Marco Peña": "#dd4b39" };
-  var plazaPorFraccionamiento = { "Villas del Sol": "Victoria", "Los Encinos": "Victoria", "Real del Valle": "San Luis Potosí" };
-
-  var clientes = [
-    { id: 1, etapa: "primer_contacto", docs: { avaluo: false, expediente: false }, nombre: "Roberto Salinas", telefono: "834 123 4501", lote: "Lote 12", fraccionamiento: "Villas del Sol", vendedor: "Ana López", monto: 480000, ultimoSeguimiento: ccFechaHace(0), seguimientos: [{ fecha: ccFechaHace(0), autor: "Ana López", canal: "Llamada", texto: "Contacto inicial por teléfono, interesado en modelo de 2 recámaras." }] },
-    { id: 2, etapa: "primer_contacto", docs: { avaluo: false, expediente: false }, nombre: "Laura Domínguez", telefono: "834 123 4502", lote: "Lote 3", fraccionamiento: "Real del Valle", vendedor: "Carlos Ruiz", monto: 520000, ultimoSeguimiento: ccFechaHace(4), seguimientos: [{ fecha: ccFechaHace(4), autor: "Carlos Ruiz", canal: "WhatsApp", texto: "Llamada inicial, pidió información por WhatsApp." }] },
-    { id: 3, etapa: "segundo_contacto", docs: { avaluo: false, expediente: false }, nombre: "Jorge Herrera", telefono: "834 123 4503", lote: "Lote 8", fraccionamiento: "Los Encinos", vendedor: "Diana Torres", monto: 610000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(6), autor: "Diana Torres", canal: "Llamada", texto: "Primer contacto, mostró interés en crédito Infonavit." }, { fecha: ccFechaHace(1), autor: "Diana Torres", canal: "Llamada", texto: "Segunda llamada, confirmó ingresos y envió documentos." }] },
-    { id: 4, etapa: "cita", docs: { avaluo: false, expediente: false }, nombre: "Fernando Cantú", telefono: "834 123 4505", lote: "Lote 15", fraccionamiento: "Real del Valle", vendedor: "Ana López", monto: 545000, fechaCita: ccFechaEn(2), ultimoSeguimiento: ccFechaHace(2), seguimientos: [{ fecha: ccFechaHace(2), autor: "Ana López", canal: "Llamada", texto: "Cita agendada para el sábado a las 11am en sala de ventas." }] },
-    { id: 5, etapa: "prospecto", docs: { avaluo: false, expediente: false }, nombre: "Miguel Ángel Soto", telefono: "834 123 4507", lote: "Lote 9", fraccionamiento: "Villas del Sol", vendedor: "Diana Torres", monto: 470000, ultimoSeguimiento: ccFechaHace(3), seguimientos: [{ fecha: ccFechaHace(9), autor: "Diana Torres", canal: "Visita", texto: "Visitó la casa muestra, le gustó la ubicación." }, { fecha: ccFechaHace(3), autor: "Diana Torres", canal: "Llamada", texto: "Está comparando con otro fraccionamiento, dar seguimiento." }] },
-    { id: 6, etapa: "cliente", docs: { avaluo: true, expediente: false }, nombre: "Ricardo Elizondo", telefono: "834 123 4509", lote: "Lote 18", fraccionamiento: "Los Encinos", vendedor: "Ana López", monto: 530000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Ana López", canal: "Correo", texto: "Ya es cliente, se solicitó el avalúo del lote." }] },
-    { id: 7, etapa: "cliente", docs: { avaluo: false, expediente: false }, nombre: "Alejandra Morales", telefono: "834 123 4510", lote: "Lote 4", fraccionamiento: "Villas del Sol", vendedor: "Carlos Ruiz", monto: 505000, ultimoSeguimiento: ccFechaHace(5), seguimientos: [{ fecha: ccFechaHace(5), autor: "Carlos Ruiz", canal: "Llamada", texto: "Se convirtió en cliente, pendiente de subir documentos." }] },
-    { id: 8, etapa: "expediente_completo", docs: { avaluo: true, expediente: true }, nombre: "Eduardo Guzmán", telefono: "834 123 4513", lote: "Lote 2", fraccionamiento: "Villas del Sol", vendedor: "Ana López", monto: 500000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Ana López", canal: "Visita", texto: "Expediente completo, listo para pasar a firmas." }] },
-    { id: 9, etapa: "documentos", docs: { avaluo: true, expediente: true }, nombre: "Sofía Reyes", telefono: "834 123 4516", lote: "Lote 5", fraccionamiento: "Villas del Sol", vendedor: "Ana López", monto: 500000, metaExtra: "Checklist de documentos en revisión", ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Ana López", canal: "Correo", texto: "Pasó a firmas, se está revisando el checklist de documentos." }] },
-    { id: 10, etapa: "avaluo", docs: { avaluo: true, expediente: true }, nombre: "Daniel Cabrera", telefono: "834 123 4517", lote: "Lote 22", fraccionamiento: "Real del Valle", vendedor: "Carlos Ruiz", monto: 610000, ultimoSeguimiento: ccFechaHace(2), seguimientos: [{ fecha: ccFechaHace(2), autor: "Carlos Ruiz", canal: "Llamada", texto: "Documentos aprobados, se solicitó el avalúo formal." }] },
-    { id: 11, etapa: "fondeo", docs: { avaluo: true, expediente: true }, nombre: "Cynthia Reséndez", telefono: "834 123 4518", lote: "Lote 14", fraccionamiento: "Los Encinos", vendedor: "Diana Torres", monto: 575000, ultimoSeguimiento: ccFechaHace(0), seguimientos: [{ fecha: ccFechaHace(0), autor: "Diana Torres", canal: "Correo", texto: "Avalúo listo, en trámite de fondeo con Notaría 3." }] },
-    { id: 12, etapa: "firma", docs: { avaluo: true, expediente: true }, nombre: "Óscar Villegas", telefono: "834 123 4519", lote: "Lote 7", fraccionamiento: "Villas del Sol", vendedor: "Marco Peña", monto: 495000, fechaFirma: ccFechaEn(7), ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Marco Peña", canal: "Llamada", texto: "Fondeo confirmado, se agendó fecha de firma." }] },
-    { id: 13, etapa: "escrituras", docs: { avaluo: true, expediente: true }, nombre: "Paola Siller", telefono: "834 123 4520", lote: "Lote 31", fraccionamiento: "Real del Valle", vendedor: "Ana López", monto: 640000, ultimoSeguimiento: ccFechaHace(2), seguimientos: [{ fecha: ccFechaHace(2), autor: "Ana López", canal: "Visita", texto: "Firma realizada, se subió la escritura al sistema." }] },
-    { id: 14, etapa: "expediente_fisico", docs: { avaluo: true, expediente: true }, nombre: "Rubén Garza", telefono: "834 123 4521", lote: "Lote 10", fraccionamiento: "Los Encinos", vendedor: "Carlos Ruiz", monto: 520000, ultimoSeguimiento: ccFechaHace(3), seguimientos: [{ fecha: ccFechaHace(3), autor: "Carlos Ruiz", canal: "Correo", texto: "Escritura lista, falta confirmar expediente físico." }] },
-    { id: 15, etapa: "visto_bueno", docs: { avaluo: true, expediente: true }, nombre: "Marisol Uribe", telefono: "834 123 4522", lote: "Lote 25", fraccionamiento: "Villas del Sol", vendedor: "Diana Torres", monto: 505000, ultimoSeguimiento: ccFechaHace(1), seguimientos: [{ fecha: ccFechaHace(1), autor: "Diana Torres", canal: "Correo", texto: "Expediente físico confirmado, en espera de visto bueno." }] },
-    { id: 16, etapa: "finalizado", docs: { avaluo: true, expediente: true }, nombre: "Álvaro Peña", telefono: "834 123 4523", lote: "Lote 17", fraccionamiento: "Real del Valle", vendedor: "Marco Peña", monto: 630000, ultimoSeguimiento: ccFechaHace(4), seguimientos: [{ fecha: ccFechaHace(4), autor: "Marco Peña", canal: "Visita", texto: "Visto bueno de Contraloría recibido, proceso finalizado." }] },
-    { id: 17, etapa: "cancelado", docs: { avaluo: false, expediente: false }, nombre: "Ramiro Cantú", telefono: "834 123 4524", lote: "Lote 24", fraccionamiento: "Villas del Sol", vendedor: "Carlos Ruiz", monto: 470000, motivoCancelacion: "Se fue con la competencia", ultimoSeguimiento: ccFechaHace(5), seguimientos: [{ fecha: ccFechaHace(9), autor: "Carlos Ruiz", canal: "Llamada", texto: "Interesado, comparando opciones de crédito." }, { fecha: ccFechaHace(5), autor: "Carlos Ruiz", canal: "Llamada", texto: "Se cancela: el cliente ya compró en otro fraccionamiento." }] }
-  ];
-
-  clientes.forEach(function (c) { c.etapaDesde = c.ultimoSeguimiento; });
-
-  return {
-    fases: fases, etapas: etapas, vendedores: vendedores, vendedorColores: vendedorColores,
-    plazaPorFraccionamiento: plazaPorFraccionamiento, slaProspectoDias: 2, clientes: clientes
-  };
-}
-
-function ccActualizarIndicadorDemo() {
-  var sub = document.getElementById("appMarcaSub");
-  var btn = document.getElementById("btnDemo");
-  if (!sub || !btn) return;
-  if (MODO_DEMO) {
-    sub.textContent = "Modo demo · datos de prueba, no se guardan cambios";
-    sub.classList.add("modo-demo-texto");
-    btn.classList.add("activo");
-    btn.title = "Salir del modo demo";
-  } else {
-    sub.textContent = "Grupo Caletto · vista de solo lectura";
-    sub.classList.remove("modo-demo-texto");
-    btn.classList.remove("activo");
-    btn.title = "Modo demo";
-  }
-}
-
-function ccActivarModoDemo() {
-  MODO_DEMO = true;
-  DATA = ccConstruirDatosDemo();
-  ultimaActualizacion = new Date();
-  ccPoblarFiltros();
-  ccRender();
-  ccActualizarIndicadorDemo();
-  ccMostrarPantalla("app");
-}
-
-function ccSalirModoDemo() {
-  MODO_DEMO = false;
-  DATA = null;
-  ccActualizarIndicadorDemo();
-  ccCargarDatos();
-}
-
-function ccAlternarModoDemo() {
-  if (MODO_DEMO) {
-    ccSalirModoDemo();
-  } else {
-    ccActivarModoDemo();
-  }
-}
+var ccPeriodoInicializado = false;
 
 /* ----- Tabs (Resumen / Kanban) ----- */
 
@@ -207,12 +90,18 @@ function ccCargarDatos() {
       return res.json();
     })
     .then(function (json) {
-      MODO_DEMO = false;
       DATA = json;
       ultimaActualizacion = new Date();
+      ccAsignarColoresVendedores();
       ccPoblarFiltros();
-      ccRender();
-      ccActualizarIndicadorDemo();
+      ccPoblarPeriodosRapidos();
+      if (!ccPeriodoInicializado) {
+        ccPeriodoInicializado = true;
+        ccAplicarPeriodo("mes");
+      } else {
+        ccActualizarPeriodoUI();
+        ccRender();
+      }
       ccMostrarPantalla("app");
     })
     .catch(function (err) {
@@ -268,8 +157,37 @@ function ccPlazaDe(fraccionamiento) {
   return "";
 }
 
+var CC_VENDEDOR_COLORES_PALETA = ["#3c8dbc", "#f39c12", "#00a65a", "#dd4b39", "#605ca8", "#00c0ef", "#f56954", "#008d4c"];
+var ccVendedorColoresExtra = {};
+
+// vendedorColores del API solo trae unos cuantos nombres fijos; cualquier
+// vendedor real que no este ahi le toca color dinamico de una paleta, para
+// que no se vean todos igual de azules en el Ranking/Kanban.
+function ccAsignarColoresVendedores() {
+  ccVendedorColoresExtra = {};
+  var conocidos = Object.keys(DATA.vendedorColores || {});
+  var coloresUsados = conocidos.map(function (v) { return DATA.vendedorColores[v]; });
+  var faltantes = ccValoresUnicos(function (d) { return d.vendedor; }).filter(function (v) {
+    return conocidos.indexOf(v) === -1;
+  });
+
+  var idx = 0;
+  faltantes.forEach(function (v) {
+    // brinca cualquier color de la paleta que ya este en uso por un vendedor
+    // conocido, para que nunca se repita el color con alguien mas.
+    while (coloresUsados.indexOf(CC_VENDEDOR_COLORES_PALETA[idx % CC_VENDEDOR_COLORES_PALETA.length]) !== -1) {
+      idx++;
+    }
+    var color = CC_VENDEDOR_COLORES_PALETA[idx % CC_VENDEDOR_COLORES_PALETA.length];
+    ccVendedorColoresExtra[v] = color;
+    coloresUsados.push(color);
+    idx++;
+  });
+}
+
 function ccVendedorColor(nombre) {
-  return DATA.vendedorColores[nombre] || "#3c8dbc";
+  if (DATA.vendedorColores && DATA.vendedorColores[nombre]) return DATA.vendedorColores[nombre];
+  return ccVendedorColoresExtra[nombre] || "#3c8dbc";
 }
 
 function ccIniciales(nombre) {
@@ -370,10 +288,72 @@ function ccFiltrarFraccPorPlaza() {
   if (fraccionamientos.indexOf(valorActual) !== -1) selFracc.value = valorActual;
 }
 
-function ccLimpiarFechas() {
-  document.getElementById("fFechaDesde").value = "";
-  document.getElementById("fFechaHasta").value = "";
+/* ----- Periodos rapidos ----- */
+
+var CC_PERIODOS = [
+  { clave: "hoy", nombre: "Hoy" },
+  { clave: "semana", nombre: "Esta semana" },
+  { clave: "mes", nombre: "Este mes" },
+  { clave: "mesPasado", nombre: "Mes pasado" },
+  { clave: "anio", nombre: "Este año" },
+  { clave: "todo", nombre: "Todo" }
+];
+var CC_PERIODO_ACTIVO = "mes";
+
+function ccRangoPeriodo(clave) {
+  var hoy = new Date();
+  function iso(d) { return d.toISOString().substring(0, 10); }
+  function inicioSemana(d) {
+    var dia = d.getDay(); // 0 = domingo
+    var diff = dia === 0 ? 6 : dia - 1; // dias desde el lunes
+    var l = new Date(d);
+    l.setDate(d.getDate() - diff);
+    return l;
+  }
+  if (clave === "hoy") return { desde: iso(hoy), hasta: iso(hoy) };
+  if (clave === "semana") return { desde: iso(inicioSemana(hoy)), hasta: iso(hoy) };
+  if (clave === "mes") return { desde: iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), hasta: iso(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)) };
+  if (clave === "mesPasado") return { desde: iso(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)), hasta: iso(new Date(hoy.getFullYear(), hoy.getMonth(), 0)) };
+  if (clave === "anio") return { desde: iso(new Date(hoy.getFullYear(), 0, 1)), hasta: iso(new Date(hoy.getFullYear(), 11, 31)) };
+  return { desde: "", hasta: "" };
+}
+
+function ccPoblarPeriodosRapidos() {
+  var cont = document.getElementById("periodosRapidos");
+  if (!cont || cont.children.length) return;
+  cont.innerHTML = CC_PERIODOS.map(function (p) {
+    return '<button type="button" class="periodo-chip" data-periodo="' + p.clave + '" onclick="ccAplicarPeriodo(\'' + p.clave + '\')">' + p.nombre + '</button>';
+  }).join("");
+}
+
+function ccAplicarPeriodo(clave) {
+  CC_PERIODO_ACTIVO = clave;
+  var rango = ccRangoPeriodo(clave);
+  document.getElementById("fFechaDesde").value = rango.desde;
+  document.getElementById("fFechaHasta").value = rango.hasta;
+  ccActualizarPeriodoUI();
   ccRender();
+}
+
+function ccFechaEditadaManualmente() {
+  // si el usuario toca las fechas a mano, ya no corresponde a ningun chip
+  CC_PERIODO_ACTIVO = "personalizado";
+  ccActualizarPeriodoUI();
+  ccRender();
+}
+
+function ccActualizarPeriodoUI() {
+  var etiqueta = document.getElementById("filtrosPeriodoActual");
+  if (!etiqueta) return;
+  var info = CC_PERIODOS.filter(function (p) { return p.clave === CC_PERIODO_ACTIVO; })[0];
+  etiqueta.textContent = info ? info.nombre : "Personalizado";
+  document.querySelectorAll(".periodo-chip").forEach(function (btn) {
+    btn.classList.toggle("activo", btn.getAttribute("data-periodo") === CC_PERIODO_ACTIVO);
+  });
+}
+
+function ccLimpiarFechas() {
+  ccAplicarPeriodo("todo");
 }
 
 function ccDatosFiltrados() {
@@ -408,21 +388,71 @@ function ccAlternarFiltros() {
 }
 
 function ccActualizarFiltrosBadge() {
+  // El periodo (fechas) ya tiene su propia etiqueta junto al boton de
+  // Filtros, asi que aqui solo se cuentan los demas filtros para no duplicar
+  // la señal.
   var activos = 0;
   if (document.getElementById("fBuscar").value.trim()) activos++;
   if (document.getElementById("fPlaza").value) activos++;
   if (document.getElementById("fFracc").value) activos++;
   if (document.getElementById("fVendedor").value) activos++;
-  if (document.getElementById("fFechaDesde").value) activos++;
-  if (document.getElementById("fFechaHasta").value) activos++;
 
   var badge = document.getElementById("filtrosBadge");
   badge.textContent = activos;
   badge.style.display = activos ? "inline-flex" : "none";
 }
 
+var CC_NOMBRES_MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+// La meta y el comparativo siempre son del mes de calendario actual contra
+// el anterior -- a proposito NO usan el filtro de periodo de arriba, para
+// que "meta de agosto" no cambie de significado segun que chip este activo.
+function ccRenderMetaMes() {
+  var card = document.getElementById("cardMeta");
+  var cont = document.getElementById("metaMes");
+  if (!card || !cont || !DATA) return;
+
+  function iso(d) { return d.toISOString().substring(0, 10); }
+  var hoy = new Date();
+  var inicioMes = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+  var inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  var finMesAnterior = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 0));
+  var nombreMesAnterior = CC_NOMBRES_MES[inicioMesAnterior.getMonth()] + " " + inicioMesAnterior.getFullYear();
+
+  var cerrados = DATA.clientes.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var montoEsteMes = cerrados.filter(function (d) { return d.etapaDesde >= inicioMes; })
+    .reduce(function (s, d) { return s + d.monto; }, 0);
+  var montoMesAnterior = cerrados.filter(function (d) { return d.etapaDesde >= iso(inicioMesAnterior) && d.etapaDesde <= finMesAnterior; })
+    .reduce(function (s, d) { return s + d.monto; }, 0);
+
+  var metaHtml;
+  if (DATA.metaMensual && DATA.metaMensual > 0) {
+    var pct = Math.round((montoEsteMes / DATA.metaMensual) * 100);
+    var pctBarra = Math.min(pct, 100);
+    metaHtml =
+      '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoEsteMes) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
+      '<div class="barra-pista meta-barra"><div class="barra-fill" style="width:' + pctBarra + '%;background:' + (pct >= 100 ? "#00a65a" : "#2a78d6") + '">' + pct + '%</div></div>';
+  } else {
+    metaHtml = '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoEsteMes) + '</span><span class="meta-de"> cerrado este mes</span></div>';
+  }
+
+  var cambioHtml = "";
+  if (montoMesAnterior > 0) {
+    var pctCambio = Math.round(((montoEsteMes - montoMesAnterior) / montoMesAnterior) * 100);
+    var subeBaja = pctCambio >= 0 ? "sube" : "baja";
+    var icono = pctCambio >= 0 ? "fa-caret-up" : "fa-caret-down";
+    cambioHtml = '<span class="meta-comparativo ' + subeBaja + '"><i class="fa ' + icono + '"></i> ' + Math.abs(pctCambio) + '% vs ' + nombreMesAnterior + '</span>';
+  } else if (montoEsteMes > 0) {
+    cambioHtml = '<span class="meta-comparativo sube"><i class="fa fa-caret-up"></i> vs ' + nombreMesAnterior + ' (sin cierres)</span>';
+  }
+
+  card.style.display = "";
+  cont.innerHTML = metaHtml + cambioHtml;
+}
+
 function ccRender() {
   ccActualizarFiltrosBadge();
+  ccRenderMetaMes();
   var datos = ccDatosFiltrados();
   ccRenderBanner(datos);
   ccRenderKpis(datos);

@@ -35,7 +35,6 @@
     <div class="guia-item"><i class="fa fa-bell"></i><div><strong>Atención requerida</strong> son los clientes que llevan mucho tiempo sin seguimiento — los que están cerca de concretarse (Prospecto, Cita, Cliente) aparecen primero.</div></div>
     <div class="guia-item"><i class="fa fa-calendar"></i><div><strong>Próximas citas y firmas</strong> muestra las fechas ya agendadas, ordenadas por cuál es más urgente.</div></div>
     <div class="guia-item"><i class="fa fa-trophy"></i><div><strong>Ranking de vendedores</strong> compara a todo el equipo por monto vendido, con el desglose de cuántos tiene cada uno por plaza.</div></div>
-    <div class="guia-item"><i class="fa fa-flask"></i><div>El ícono de matraz activa un <strong>modo demo</strong> con datos de prueba — útil para explorar la app sin tocar información real.</div></div>
   </div>
   <div class="estado-form">
     <button type="button" class="btn btn-primario" onclick="ccCerrarBienvenida()">Entendido, vamos</button>
@@ -55,7 +54,6 @@
   <div class="estado-texto" id="errorTexto">Ocurrió un problema al conectar.</div>
   <div class="estado-form">
     <button type="button" class="btn btn-primario" onclick="ccCargarDatos()">Reintentar</button>
-    <button type="button" class="btn btn-fantasma" onclick="ccActivarModoDemo()">Usar modo demo (datos de prueba)</button>
   </div>
 </div>
 
@@ -68,9 +66,6 @@
       <div class="app-marca-sub" id="appMarcaSub">Grupo Caletto &middot; vista de solo lectura</div>
     </div>
     <div class="app-cabecera-btns">
-      <button type="button" class="app-btn-refrescar" id="btnDemo" onclick="ccAlternarModoDemo()" title="Modo demo">
-        <i class="fa fa-flask"></i>
-      </button>
       <button type="button" class="app-btn-refrescar" onclick="ccMostrarBienvenida()" title="Ayuda">
         <i class="fa fa-question-circle"></i>
       </button>
@@ -89,11 +84,13 @@
 
     <button type="button" class="filtros-toggle" id="btnFiltrosToggle" onclick="ccAlternarFiltros()">
       <i class="fa fa-sliders"></i> Filtros
+      <span class="filtros-periodo-actual" id="filtrosPeriodoActual">Este mes</span>
       <span class="filtros-badge" id="filtrosBadge" style="display:none;">0</span>
       <i class="fa fa-chevron-down filtros-chevron" id="filtrosChevron"></i>
     </button>
 
     <div class="filtros-panel" id="filtrosPanel" style="display:none;">
+      <div class="periodos-rapidos" id="periodosRapidos"></div>
       <div class="toolbar">
         <input type="text" id="fBuscar" placeholder="Buscar cliente, lote..." oninput="ccBuscarDebounced()">
       </div>
@@ -109,12 +106,12 @@
           <i class="fa fa-calendar toolbar-fechas-icono"></i>
           <label class="toolbar-fecha-label">
             <span>Desde</span>
-            <input type="date" id="fFechaDesde" onchange="ccRender()">
+            <input type="date" id="fFechaDesde" onchange="ccFechaEditadaManualmente()">
           </label>
           <i class="fa fa-long-arrow-right toolbar-fechas-flecha"></i>
           <label class="toolbar-fecha-label">
             <span>Hasta</span>
-            <input type="date" id="fFechaHasta" onchange="ccRender()">
+            <input type="date" id="fFechaHasta" onchange="ccFechaEditadaManualmente()">
           </label>
         </div>
         <button type="button" class="btn-limpiar-fechas" onclick="ccLimpiarFechas()" title="Quitar filtro de fechas">
@@ -128,6 +125,11 @@
     <div id="vistaResumen">
 
       <div class="kpis" id="kpis"></div>
+
+      <div class="card" id="cardMeta" style="display:none;">
+        <div class="card-titulo">Meta del mes</div>
+        <div id="metaMes"></div>
+      </div>
 
       <div class="card">
         <div class="card-titulo">Atención requerida</div>
