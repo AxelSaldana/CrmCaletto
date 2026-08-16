@@ -68,17 +68,15 @@ function ccBuscarDebounced() {
 }
 
 // Preventa (Primer contacto, Cita realizada, Negociación) sigue siendo
-// datos de ejemplo hardcodeados en el backend, no conectados a la BD real
-// -- se quitan por completo aqui para que la app nunca mezcle numeros
-// falsos con los reales.
+// datos de ejemplo hardcodeados en el backend, no conectados a la BD real.
+// Se quitan solo los clientes falsos -- la fase Preventa se queda visible
+// en el embudo/Kanban, nomas que en 0, en vez de desaparecer del todo.
 function ccQuitarDatosDeEjemplo() {
   if (!DATA) return;
   DATA.clientes = (DATA.clientes || []).filter(function (d) {
     var info = DATA.etapas.filter(function (e) { return e.clave === d.etapa; })[0];
     return !info || info.fase !== "preventa";
   });
-  DATA.fases = (DATA.fases || []).filter(function (f) { return f.clave !== "preventa"; });
-  DATA.etapas = (DATA.etapas || []).filter(function (e) { return e.fase !== "preventa"; });
 }
 
 function ccCargarDatos() {
