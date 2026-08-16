@@ -79,11 +79,18 @@ function ccCargarDatos() {
   if (!DATA) ccMostrarPantalla("cargando");
 
   // Si el tunel/servidor real no responde, que la app falle rapido en vez de
-  // quedarse en "Cargando..." para siempre.
+  // quedarse en "Cargando..." para siempre. Dos capas: el AbortController
+  // cancela el fetch a los 15s (limpio, libera la conexion), y ademas un
+  // timeout "duro" independiente a los 20s que fuerza el error sin importar
+  // si la cancelacion del fetch realmente llega a rechazar la promesa en
+  // ese entorno/red -- por si acaso.
   var controlador = new AbortController();
   var timeoutId = setTimeout(function () { controlador.abort(); }, 15000);
+  var timeoutDuro = new Promise(function (_, reject) {
+    setTimeout(function () { reject({ tipo: "timeout" }); }, 20000);
+  });
 
-  fetch(API_URL, { signal: controlador.signal })
+  Promise.race([fetch(API_URL, { signal: controlador.signal }), timeoutDuro])
     .then(function (res) {
       clearTimeout(timeoutId);
       if (!res.ok) { throw { tipo: "http", status: res.status }; }
@@ -108,7 +115,7 @@ function ccCargarDatos() {
       clearTimeout(timeoutId);
       var msg = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
       if (err && err.tipo === "http") msg = "El servidor respondió con un error (" + err.status + ").";
-      else if (err && err.name === "AbortError") msg = "El servidor tardó demasiado en responder. Intenta de nuevo.";
+      else if (err && (err.name === "AbortError" || err.tipo === "timeout")) msg = "El servidor tardó demasiado en responder. Intenta de nuevo.";
       document.getElementById("errorTexto").textContent = msg;
       ccMostrarPantalla("error");
     })
@@ -174,9 +181,14 @@ function ccAsignarColoresVendedores() {
   var idx = 0;
   faltantes.forEach(function (v) {
     // brinca cualquier color de la paleta que ya este en uso por un vendedor
-    // conocido, para que nunca se repita el color con alguien mas.
-    while (coloresUsados.indexOf(CC_VENDEDOR_COLORES_PALETA[idx % CC_VENDEDOR_COLORES_PALETA.length]) !== -1) {
+    // conocido, para que nunca se repita el color con alguien mas -- pero
+    // como maximo el tamaño de la paleta: si hay mas vendedores que colores
+    // (muy real con datos reales), ya no hay de otra mas que repetir color,
+    // NUNCA quedarse en un while sin salida.
+    var intentos = 0;
+    while (coloresUsados.indexOf(CC_VENDEDOR_COLORES_PALETA[idx % CC_VENDEDOR_COLORES_PALETA.length]) !== -1 && intentos < CC_VENDEDOR_COLORES_PALETA.length) {
       idx++;
+      intentos++;
     }
     var color = CC_VENDEDOR_COLORES_PALETA[idx % CC_VENDEDOR_COLORES_PALETA.length];
     ccVendedorColoresExtra[v] = color;
