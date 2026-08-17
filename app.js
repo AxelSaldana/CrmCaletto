@@ -730,7 +730,12 @@ function ccRenderRanking(datos) {
 
   var filas = vendedoresVisibles.map(function (v) {
     var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
-    var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
+    // Los ingresos solo cuentan clientes en etapa "Liberado" -- ahi es
+    // cuando la venta se considera ganada. Cierre de expediente y las
+    // etapas de Firmas no suman aqui (aunque si siguen contando para
+    // "finalizados" y el desglose por plaza).
+    var monto = items.filter(function (d) { return d.etapa === "liberado"; })
+      .reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; }).length;
 
     var porPlaza = {};
