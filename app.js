@@ -444,7 +444,7 @@ function ccRenderMetaMes() {
   var finMesAnterior = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 0));
   var nombreMesAnterior = CC_NOMBRES_MES[inicioMesAnterior.getMonth()] + " " + inicioMesAnterior.getFullYear();
 
-  var cerrados = DATA.clientes.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var cerrados = DATA.clientes.filter(function (d) { return CC_ETAPAS_DESDE_LIBERADO.indexOf(d.etapa) !== -1; });
   var montoEsteMes = cerrados.filter(function (d) { return d.etapaDesde >= inicioMes; })
     .reduce(function (s, d) { return s + d.monto; }, 0);
   var montoMesAnterior = cerrados.filter(function (d) { return d.etapaDesde >= iso(inicioMesAnterior) && d.etapaDesde <= finMesAnterior; })
@@ -603,6 +603,12 @@ function ccRenderEmbudo(datos) {
 }
 
 var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
+
+// Igual que en el Ranking de vendedores: "Liberado" es cuando se considera
+// ganada la venta, asi que "cerrado" para la Meta del mes cuenta desde ahi
+// en adelante (Liberado + todas las etapas de Firmas), no solo hasta que
+// llega a Escrituras.
+var CC_ETAPAS_DESDE_LIBERADO = ["liberado", "documentos", "avaluo", "fondeo", "firma"].concat(CC_FIRMAS_ETAPA_FINAL);
 
 function ccRenderFirmasDetalle(datos) {
   var etapasFirmas = DATA.etapas.filter(function (e) { return e.fase === "firmas" && CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; });
