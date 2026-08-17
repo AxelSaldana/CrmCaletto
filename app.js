@@ -635,11 +635,11 @@ setInterval(ccRenderTimestamp, 30000);
 function ccRenderKpis(datos) {
   var sla = DATA.slaProspectoDias;
   var total = datos.length;
-  var cerrados = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var cerrados = datos.filter(ccEsFinalizado);
   var montoCerrado = cerrados.reduce(function (s, d) { return s + d.monto; }, 0);
   var tasa = total ? Math.round((cerrados.length / total) * 100) : 0;
   var vencidos = datos.filter(function (d) {
-    return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) === -1 && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
+    return !ccEsFinalizado(d) && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
   });
 
   // "En pipeline" es especificamente Preventa -- listo para cuando se
@@ -663,6 +663,10 @@ function ccDesglosePorFase(items, excluirFinalizadoDeFirmas) {
       etapasFase = etapasFase.filter(function (e) { return CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; });
     }
     var itemsFase = items.filter(function (d) {
+      // Si ya cuenta como "Finalizado" (aunque su etapa siga siendo, por
+      // ejemplo, "Firma"), no lo cuentes tambien aqui en Firmas -- ya
+      // aparece en la fila/columna de Finalizado, para no duplicarlo.
+      if (excluirFinalizadoDeFirmas && fase.clave === "firmas" && ccEsFinalizado(d)) return false;
       return etapasFase.some(function (e) { return e.clave === d.etapa; });
     });
     var monto = itemsFase.reduce(function (s, d) { return s + d.monto; }, 0);
@@ -674,7 +678,7 @@ function ccRenderEmbudo(datos) {
   var filas = ccDesglosePorFase(datos, true);
 
   var infoFinal = ccEtapaInfo("finalizado");
-  var itemsFinal = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var itemsFinal = datos.filter(ccEsFinalizado);
   var filaFinalizado = {
     fase: { clave: "finalizado", nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
     count: itemsFinal.length,
@@ -715,15 +719,25 @@ function ccRenderEmbudo(datos) {
 
 var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
 
+// "Finalizado" tambien cuenta a cualquiera que YA tenga fecha de firma
+// capturada, aunque su etapa todavia diga "Firma" (fecha_firma a veces se
+// registra antes de que alguien mueva la tarjeta a la siguiente etapa).
+function ccEsFinalizado(d) {
+  return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1 || !!d.fechaFirma;
+}
+
 function ccRenderFirmasDetalle(datos) {
   var etapasFirmas = DATA.etapas.filter(function (e) { return e.fase === "firmas" && CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; });
   var filas = etapasFirmas.map(function (etapa) {
-    var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
+    // Si ya cuenta como Finalizado (por fechaFirma), que no se quede
+    // tambien contado en su etapa individual (ej. "Firma") -- se mueve
+    // por completo a la fila de Finalizado, sin duplicar.
+    var items = datos.filter(function (d) { return d.etapa === etapa.clave && !ccEsFinalizado(d); });
     var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
     return { etapa: etapa, count: items.length, monto: monto };
   });
 
-  var itemsFinal = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
+  var itemsFinal = datos.filter(ccEsFinalizado);
   var infoFinal = ccEtapaInfo("finalizado");
   filas.push({
     etapa: { clave: "finalizado", nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
@@ -847,7 +861,7 @@ function ccRenderRanking(datos) {
     // "finalizados" y el desglose por plaza).
     var monto = items.filter(function (d) { return d.etapa === "liberado"; })
       .reduce(function (s, d) { return s + d.monto; }, 0);
-    var finalizados = items.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; }).length;
+    var finalizados = items.filter(ccEsFinalizado).length;
 
     var porPlaza = {};
     items.forEach(function (d) {
@@ -950,7 +964,9 @@ function ccRenderMotivos(datos) {
 
 function ccRenderTiempoEtapas(datos) {
   var filas = DATA.etapas.filter(function (e) { return e.clave !== "cancelado" && e.clave !== "finalizado"; }).map(function (etapa) {
-    var items = datos.filter(function (d) { return d.etapa === etapa.clave; });
+    // Si ya tiene fechaFirma (cuenta como Finalizado), ya no esta "atorado"
+    // aqui, sin importar que su etapa todavia diga otra cosa.
+    var items = datos.filter(function (d) { return d.etapa === etapa.clave && !ccEsFinalizado(d); });
     var promedio = items.length
       ? Math.round(items.reduce(function (s, d) { return s + ccDiasDesde(d.etapaDesde); }, 0) / items.length)
       : null;
@@ -1002,7 +1018,12 @@ function ccRenderTarjetaKanban(d) {
 
 function ccRenderColumnaKanban(etapa, datos) {
   var claves = etapa.claves || [etapa.clave];
-  var items = datos.filter(function (d) { return claves.indexOf(d.etapa) !== -1; });
+  // La columna unificada "Finalizado" tambien recoge a cualquiera con
+  // fechaFirma ya capturada; las demas columnas (incluyendo "Firma") no
+  // deben repetir esas mismas tarjetas.
+  var items = (etapa.clave === "finalizado")
+    ? datos.filter(ccEsFinalizado)
+    : datos.filter(function (d) { return claves.indexOf(d.etapa) !== -1 && !ccEsFinalizado(d); });
   var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
   var cuerpo = items.length
     ? items.map(ccRenderTarjetaKanban).join("")
