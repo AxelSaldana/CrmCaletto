@@ -429,49 +429,107 @@ function ccActualizarFiltrosBadge() {
 
 var CC_NOMBRES_MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-// La meta y el comparativo siempre son del mes de calendario actual contra
-// el anterior -- a proposito NO usan el filtro de periodo de arriba, para
-// que "meta de agosto" no cambie de significado segun que chip este activo.
+var CC_PERIODO_TITULO_META = {
+  hoy: "Meta de hoy", semana: "Meta de la semana", mes: "Meta del mes",
+  mesPasado: "Cerrado el mes pasado", anio: "Meta del año",
+  todo: "Total cerrado", personalizado: "Total del periodo"
+};
+var CC_PERIODO_ETIQUETA_CERRADO = {
+  hoy: "cerrado hoy", semana: "cerrado esta semana", mes: "cerrado este mes",
+  mesPasado: "cerrado el mes pasado", anio: "cerrado este año",
+  todo: "cerrado en total", personalizado: "cerrado en el rango"
+};
+
+// El periodo anterior "equivalente" para el comparativo, segun que chip
+// este activo. "Todo" y "Personalizado" no tienen un anterior claro, asi
+// que no muestran comparativo.
+function ccRangoPeriodoAnterior(clave) {
+  var hoy = new Date();
+  function iso(d) { return d.toISOString().substring(0, 10); }
+
+  if (clave === "hoy") {
+    var ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+    return { desde: iso(ayer), hasta: iso(ayer), nombre: "ayer" };
+  }
+  if (clave === "semana") {
+    var actual = ccRangoPeriodo("semana");
+    var d1 = new Date(actual.desde + "T00:00:00"); d1.setDate(d1.getDate() - 7);
+    var d2 = new Date(actual.hasta + "T00:00:00"); d2.setDate(d2.getDate() - 7);
+    return { desde: iso(d1), hasta: iso(d2), nombre: "la semana pasada" };
+  }
+  if (clave === "mes") {
+    var inicioAnt = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    var finAnt = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    return { desde: iso(inicioAnt), hasta: iso(finAnt), nombre: CC_NOMBRES_MES[inicioAnt.getMonth()] + " " + inicioAnt.getFullYear() };
+  }
+  if (clave === "mesPasado") {
+    var baseM = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    var inicioAnt2 = new Date(baseM.getFullYear(), baseM.getMonth() - 1, 1);
+    var finAnt2 = new Date(baseM.getFullYear(), baseM.getMonth(), 0);
+    return { desde: iso(inicioAnt2), hasta: iso(finAnt2), nombre: CC_NOMBRES_MES[inicioAnt2.getMonth()] + " " + inicioAnt2.getFullYear() };
+  }
+  if (clave === "anio") {
+    return { desde: iso(new Date(hoy.getFullYear() - 1, 0, 1)), hasta: iso(new Date(hoy.getFullYear() - 1, 11, 31)), nombre: String(hoy.getFullYear() - 1) };
+  }
+  return null;
+}
+
+// La meta/comparativo sigue el mismo periodo activo en Filtros (Hoy/Esta
+// semana/Este mes/etc). La barra de % contra la meta mensual solo aparece
+// cuando el periodo es exactamente "Este mes", porque DATA.metaMensual es
+// una meta mensual -- no tendria sentido compararla contra un año o una
+// semana.
 function ccRenderMetaMes() {
   var card = document.getElementById("cardMeta");
   var cont = document.getElementById("metaMes");
+  var tituloEl = document.getElementById("metaMesTitulo");
   if (!card || !cont || !DATA) return;
 
-  function iso(d) { return d.toISOString().substring(0, 10); }
-  var hoy = new Date();
-  var inicioMes = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
-  var inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
-  var finMesAnterior = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 0));
-  var nombreMesAnterior = CC_NOMBRES_MES[inicioMesAnterior.getMonth()] + " " + inicioMesAnterior.getFullYear();
+  var clave = CC_PERIODO_ACTIVO;
+  var esPersonalizado = clave === "personalizado";
+  var rangoActual = esPersonalizado ? null : ccRangoPeriodo(clave);
+  var desdeActual = esPersonalizado ? document.getElementById("fFechaDesde").value : rangoActual.desde;
+  var hastaActual = esPersonalizado ? document.getElementById("fFechaHasta").value : rangoActual.hasta;
 
   // "Cerrado" = ya tiene fecha de fondeo capturada, sin importar en que
   // etapa este ahora (aunque ya haya avanzado a Firma/Escrituras/etc, sigue
-  // contando en el mes en que realmente se fondeo).
+  // contando en el periodo en que realmente se fondeo).
   var cerrados = DATA.clientes.filter(function (d) { return !!d.fechaFondeo; });
-  var montoEsteMes = cerrados.filter(function (d) { return d.fechaFondeo >= inicioMes; })
-    .reduce(function (s, d) { return s + d.monto; }, 0);
-  var montoMesAnterior = cerrados.filter(function (d) { return d.fechaFondeo >= iso(inicioMesAnterior) && d.fechaFondeo <= finMesAnterior; })
+  function enRango(d, desde, hasta) {
+    return (!desde || d.fechaFondeo >= desde) && (!hasta || d.fechaFondeo <= hasta);
+  }
+  var montoActual = cerrados.filter(function (d) { return enRango(d, desdeActual, hastaActual); })
     .reduce(function (s, d) { return s + d.monto; }, 0);
 
+  var rangoAnterior = esPersonalizado ? null : ccRangoPeriodoAnterior(clave);
+  var montoAnterior = rangoAnterior
+    ? cerrados.filter(function (d) { return enRango(d, rangoAnterior.desde, rangoAnterior.hasta); }).reduce(function (s, d) { return s + d.monto; }, 0)
+    : 0;
+
+  if (tituloEl) tituloEl.textContent = CC_PERIODO_TITULO_META[clave] || "Total del periodo";
+  var etiquetaCerrado = CC_PERIODO_ETIQUETA_CERRADO[clave] || "cerrado en el rango";
+
   var metaHtml;
-  if (DATA.metaMensual && DATA.metaMensual > 0) {
-    var pct = Math.round((montoEsteMes / DATA.metaMensual) * 100);
+  if (clave === "mes" && DATA.metaMensual && DATA.metaMensual > 0) {
+    var pct = Math.round((montoActual / DATA.metaMensual) * 100);
     var pctBarra = Math.min(pct, 100);
     metaHtml =
-      '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoEsteMes) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
+      '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
       '<div class="barra-pista meta-barra"><div class="barra-fill" style="width:' + pctBarra + '%;background:' + (pct >= 100 ? "#00a65a" : "#2a78d6") + '">' + pct + '%</div></div>';
   } else {
-    metaHtml = '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoEsteMes) + '</span><span class="meta-de"> cerrado este mes</span></div>';
+    metaHtml = '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> ' + etiquetaCerrado + '</span></div>';
   }
 
   var cambioHtml = "";
-  if (montoMesAnterior > 0) {
-    var pctCambio = Math.round(((montoEsteMes - montoMesAnterior) / montoMesAnterior) * 100);
-    var subeBaja = pctCambio >= 0 ? "sube" : "baja";
-    var icono = pctCambio >= 0 ? "fa-caret-up" : "fa-caret-down";
-    cambioHtml = '<span class="meta-comparativo ' + subeBaja + '"><i class="fa ' + icono + '"></i> ' + Math.abs(pctCambio) + '% vs ' + nombreMesAnterior + '</span>';
-  } else if (montoEsteMes > 0) {
-    cambioHtml = '<span class="meta-comparativo sube"><i class="fa fa-caret-up"></i> vs ' + nombreMesAnterior + ' (sin cierres)</span>';
+  if (rangoAnterior) {
+    if (montoAnterior > 0) {
+      var pctCambio = Math.round(((montoActual - montoAnterior) / montoAnterior) * 100);
+      var subeBaja = pctCambio >= 0 ? "sube" : "baja";
+      var icono = pctCambio >= 0 ? "fa-caret-up" : "fa-caret-down";
+      cambioHtml = '<span class="meta-comparativo ' + subeBaja + '"><i class="fa ' + icono + '"></i> ' + Math.abs(pctCambio) + '% vs ' + rangoAnterior.nombre + '</span>';
+    } else if (montoActual > 0) {
+      cambioHtml = '<span class="meta-comparativo sube"><i class="fa fa-caret-up"></i> vs ' + rangoAnterior.nombre + ' (sin cierres)</span>';
+    }
   }
 
   card.style.display = "";
