@@ -169,7 +169,6 @@ a{color:inherit;}
 .meta-comparativo.sube{background:var(--verde-suave);color:var(--verde);}
 .meta-comparativo.baja{background:var(--coral-suave);color:var(--coral);}
 .ranking-plazas{font-size:0.76em;color:var(--tinta-suave);margin-top:4px;}
-.ranking-externos{color:var(--azul);font-weight:600;}
 .conversion{display:flex;align-items:center;gap:6px;color:var(--tinta-suave);font-size:0.78em;margin:0 0 6px 2px;}
 
 .leyenda{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;font-size:0.78em;color:var(--tinta-suave);}

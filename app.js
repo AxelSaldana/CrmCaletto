@@ -869,19 +869,6 @@ function ccRenderProximas(datos) {
   }).join("");
 }
 
-// Casos donde en un grupo (vendedor, plaza, etc.) trabajo tambien un
-// vendedor externo -- vendedorExterno trae su nombre cuando aplica.
-function ccDesgloseExternos(items) {
-  var porExterno = {};
-  items.forEach(function (d) {
-    if (d.vendedorExterno) porExterno[d.vendedorExterno] = (porExterno[d.vendedorExterno] || 0) + 1;
-  });
-  return Object.keys(porExterno)
-    .sort(function (a, b) { return porExterno[b] - porExterno[a]; })
-    .map(function (ext) { return ext + ": " + porExterno[ext]; })
-    .join(" · ");
-}
-
 function ccRenderRanking(datos) {
   var datosActivos = datos.filter(function (d) { return d.etapa !== "cancelado"; });
 
@@ -913,22 +900,36 @@ function ccRenderRanking(datos) {
       .map(function (p) { return p + ": " + porPlaza[p]; })
       .join(" · ");
 
-    var externosTexto = ccDesgloseExternos(items);
+    // Cuantos de sus casos son ventas propias vs trabajados en equipo con
+    // un vendedor externo -- se muestra como una barrita apilada, igual
+    // que el desglose por fase de "Por plaza"/"Por fraccionamiento".
+    var propios = items.filter(function (d) { return !d.vendedorExterno; }).length;
+    var externos = items.length - propios;
 
-    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v), plazasTexto: plazasTexto, externosTexto: externosTexto };
+    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v), plazasTexto: plazasTexto, propios: propios, externos: externos, total: items.length };
   }).sort(function (a, b) { return b.monto - a.monto; });
 
   var maxMonto = Math.max.apply(null, filas.map(function (f) { return f.monto; }).concat([1]));
 
-  document.getElementById("ranking").innerHTML = filas.map(function (f) {
+  var leyendaExternos = '<div class="leyenda">' +
+    '<span class="leyenda-item"><span class="leyenda-punto" style="background:var(--azul)"></span>Propias</span>' +
+    '<span class="leyenda-item"><span class="leyenda-punto" style="background:var(--naranja)"></span>Con vendedor externo</span>' +
+    '</div>';
+
+  document.getElementById("ranking").innerHTML = leyendaExternos + filas.map(function (f) {
     var pct = Math.max(Math.round((f.monto / maxMonto) * 100), f.monto ? 6 : 0);
+    var pctPropios = f.total ? (f.propios / f.total) * 100 : 0;
+    var pctExternos = f.total ? (f.externos / f.total) * 100 : 0;
+    var segmentos = '' +
+      (f.propios ? '<div class="segmento" style="width:' + pctPropios + '%;background:var(--azul)">' + (pctPropios >= 14 ? f.propios : "") + '</div>' : "") +
+      (f.externos ? '<div class="segmento" style="width:' + pctExternos + '%;background:var(--naranja)">' + (pctExternos >= 14 ? f.externos : "") + '</div>' : "");
     return '' +
       '<div class="barra-fila barra-clicable" onclick="ccIrAKanbanFiltro(\'vendedor\',\'' + f.vendedor.replace(/'/g, "\\'") + '\')">' +
         '<div class="barra-cab"><span class="barra-nombre">' + f.vendedor + '</span>' +
         '<span class="barra-valor">' + ccMoneda(f.monto) + ' · ' + f.finalizados + ' fin.</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.color + '"></div></div>' +
         (f.plazasTexto ? '<div class="ranking-plazas">' + f.plazasTexto + '</div>' : '') +
-        (f.externosTexto ? '<div class="ranking-plazas ranking-externos"><i class="fa fa-handshake-o"></i> Con vendedor externo — ' + f.externosTexto + '</div>' : '') +
+        (f.total ? '<div class="barra-pista pista-apilada" style="margin-top:6px;">' + segmentos + '</div>' : '') +
       '</div>';
   }).join("");
 }
@@ -952,13 +953,11 @@ function ccFilaApilada(nombre, items, campoFiltro) {
     var pct = (f.count / total) * 100;
     return '<div class="segmento" style="width:' + pct + '%;background:' + f.fase.color + '">' + (pct >= 14 ? f.count : "") + '</div>';
   }).join("");
-  var externosTexto = ccDesgloseExternos(items);
   return '' +
     '<div class="barra-fila' + clase + '"' + onclick + '>' +
       '<div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
       '<span class="barra-valor">' + total + ' · ' + ccMoneda(monto) + '</span></div>' +
       '<div class="barra-pista pista-apilada">' + segmentos + '</div>' +
-      (externosTexto ? '<div class="ranking-plazas ranking-externos"><i class="fa fa-handshake-o"></i> Con vendedor externo — ' + externosTexto + '</div>' : '') +
     '</div>';
 }
 
