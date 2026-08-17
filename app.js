@@ -577,6 +577,7 @@ function ccRender() {
   ccRenderAlertas(datos);
   ccRenderProximas(datos);
   ccRenderRanking(datos);
+  ccRenderTipoVendedor(datos);
   ccRenderPlaza(datos);
   ccRenderFraccionamiento(datos);
   ccRenderMotivos(datos);
@@ -885,6 +886,16 @@ function ccFilaApilada(nombre, items) {
       '<span class="barra-valor">' + total + ' · ' + ccMoneda(monto) + '</span></div>' +
       '<div class="barra-pista pista-apilada">' + segmentos + '</div>' +
     '</div>';
+}
+
+function ccRenderTipoVendedor(datos) {
+  var grupos = [
+    { nombre: "Vendedores", items: datos.filter(function (d) { return !d.esExterno; }) },
+    { nombre: "Vendedores externos", items: datos.filter(function (d) { return !!d.esExterno; }) }
+  ];
+  document.getElementById("porTipoVendedor").innerHTML = ccLeyendaFases() + grupos.map(function (g) {
+    return ccFilaApilada(g.nombre, g.items);
+  }).join("");
 }
 
 function ccRenderPlaza(datos) {
