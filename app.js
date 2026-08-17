@@ -650,8 +650,8 @@ function ccRenderKpis(datos) {
   var montoPreventa = enPreventa.reduce(function (s, d) { return s + d.monto; }, 0);
 
   document.getElementById("kpis").innerHTML =
-    '<div class="kpi"><div class="n">' + totalPreventa + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoPreventa) + '</div></div>' +
-    '<div class="kpi verde"><div class="n">' + cerrados.length + '</div><div class="l">Finalizado</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
+    '<div class="kpi kpi-clicable" onclick="ccIrAKanban(\'preventa\')"><div class="n">' + totalPreventa + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoPreventa) + '</div></div>' +
+    '<div class="kpi verde kpi-clicable" onclick="ccIrAKanban(\'firmas\',\'finalizado\')"><div class="n">' + cerrados.length + '</div><div class="l">Finalizado</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
     '<div class="kpi naranja"><div class="n">' + tasa + '%</div><div class="l">Conversión</div><div class="s">Global</div></div>' +
     '<div class="kpi coral"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
 }
@@ -686,6 +686,14 @@ function ccRenderEmbudo(datos) {
 
   var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
 
+  // A donde manda cada fila del embudo dentro del Kanban -- "Finalizado" y
+  // "Cancelado" no son grupos propios ahi, viven anidados (Finalizado
+  // dentro de Firmas, Cancelado dentro de Preventa).
+  var destinoKanban = {
+    preventa: ["preventa"], venta: ["venta"], firmas: ["firmas"],
+    finalizado: ["firmas", "finalizado"], cancelado: ["preventa", "cancelado"]
+  };
+
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
     var conv = "";
@@ -694,8 +702,10 @@ function ccRenderEmbudo(datos) {
       var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
       conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
     }
+    var destino = destinoKanban[f.fase.clave] || [f.fase.clave];
+    var onclick = "ccIrAKanban('" + destino[0] + "'" + (destino[1] ? ",'" + destino[1] + "'" : "") + ")";
     return conv +
-      '<div class="barra-fila">' +
+      '<div class="barra-fila barra-clicable" onclick="' + onclick + '">' +
         '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre + '</span>' +
         '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.fase.color + '">' + (f.count || "") + '</div></div>' +
@@ -716,7 +726,7 @@ function ccRenderFirmasDetalle(datos) {
   var itemsFinal = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
   var infoFinal = ccEtapaInfo("finalizado");
   filas.push({
-    etapa: { nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
+    etapa: { clave: "finalizado", nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
     count: itemsFinal.length,
     monto: itemsFinal.reduce(function (s, d) { return s + d.monto; }, 0)
   });
@@ -732,7 +742,7 @@ function ccRenderFirmasDetalle(datos) {
   cont.innerHTML = filas.map(function (f) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
     return '' +
-      '<div class="barra-fila">' +
+      '<div class="barra-fila barra-clicable" onclick="ccIrAKanban(\'firmas\',\'' + f.etapa.clave + '\')">' +
         '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.etapa.icono + '" style="color:' + f.etapa.color + '"></i>' + f.etapa.nombre + '</span>' +
         '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.etapa.color + '">' + (f.count || "") + '</div></div>' +
@@ -868,7 +878,7 @@ function ccRenderRanking(datos) {
   document.getElementById("ranking").innerHTML = filas.map(function (f) {
     var pct = Math.max(Math.round((f.monto / maxMonto) * 100), f.monto ? 6 : 0);
     return '' +
-      '<div class="barra-fila">' +
+      '<div class="barra-fila barra-clicable" onclick="ccIrAKanbanFiltro(\'vendedor\',\'' + f.vendedor.replace(/'/g, "\\'") + '\')">' +
         '<div class="barra-cab"><span class="barra-nombre">' + f.vendedor + '</span>' +
         '<span class="barra-valor">' + ccMoneda(f.monto) + ' · ' + f.finalizados + ' fin.</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.color + '"></div></div>' +
@@ -884,11 +894,13 @@ function ccLeyendaFases() {
   }).join("") + '</div>';
 }
 
-function ccFilaApilada(nombre, items) {
+function ccFilaApilada(nombre, items, campoFiltro) {
   var total = items.length;
   var monto = items.reduce(function (s, d) { return s + d.monto; }, 0);
+  var onclick = campoFiltro ? ' onclick="ccIrAKanbanFiltro(\'' + campoFiltro + '\',\'' + nombre.replace(/'/g, "\\'") + '\')"' : "";
+  var clase = campoFiltro ? " barra-clicable" : "";
   if (!total) {
-    return '<div class="barra-fila"><div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
+    return '<div class="barra-fila' + clase + '"' + onclick + '><div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
       '<span class="barra-valor sin-datos">Sin datos</span></div></div>';
   }
   var segmentos = ccDesglosePorFase(items).filter(function (f) { return f.count > 0; }).map(function (f) {
@@ -896,7 +908,7 @@ function ccFilaApilada(nombre, items) {
     return '<div class="segmento" style="width:' + pct + '%;background:' + f.fase.color + '">' + (pct >= 14 ? f.count : "") + '</div>';
   }).join("");
   return '' +
-    '<div class="barra-fila">' +
+    '<div class="barra-fila' + clase + '"' + onclick + '>' +
       '<div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
       '<span class="barra-valor">' + total + ' · ' + ccMoneda(monto) + '</span></div>' +
       '<div class="barra-pista pista-apilada">' + segmentos + '</div>' +
@@ -907,7 +919,7 @@ function ccRenderPlaza(datos) {
   var plazas = Array.from(new Set(datos.map(function (d) { return ccPlazaDe(d.fraccionamiento); }).filter(Boolean))).sort();
   document.getElementById("porPlaza").innerHTML = ccLeyendaFases() + plazas.map(function (p) {
     var items = datos.filter(function (d) { return ccPlazaDe(d.fraccionamiento) === p; });
-    return ccFilaApilada(p, items);
+    return ccFilaApilada(p, items, "plaza");
   }).join("");
 }
 
@@ -915,7 +927,7 @@ function ccRenderFraccionamiento(datos) {
   var fraccs = Array.from(new Set(datos.map(function (d) { return (d.fraccionamiento || "").trim(); }).filter(Boolean))).sort();
   document.getElementById("porFracc").innerHTML = ccLeyendaFases() + fraccs.map(function (f) {
     var items = datos.filter(function (d) { return (d.fraccionamiento || "").trim() === f; });
-    return ccFilaApilada(f, items);
+    return ccFilaApilada(f, items, "fraccionamiento");
   }).join("");
 }
 
@@ -997,7 +1009,7 @@ function ccRenderColumnaKanban(etapa, datos) {
     : '<div class="kb-col-vacia"><i class="fa fa-inbox"></i><br>Sin tarjetas</div>';
 
   return '' +
-    '<div class="kb-columna">' +
+    '<div class="kb-columna" data-etapa="' + etapa.clave + '">' +
       '<div class="kb-col-cabecera" style="--col-color:' + etapa.color + '">' +
         '<div class="kb-col-titulo"><i class="fa ' + etapa.icono + '" style="color:' + etapa.color + '"></i> ' + etapa.nombre + '</div>' +
         '<div class="kb-col-meta"><span>' + items.length + ' tarjeta(s)</span><span>' + ccMoneda(monto) + '</span></div>' +
@@ -1031,7 +1043,7 @@ function ccRenderKanban(datos) {
     var columnasHtml = etapasColumnas.map(function (etapa) { return ccRenderColumnaKanban(etapa, datos); }).join("");
 
     return '' +
-      '<div class="kb-fase-grupo">' +
+      '<div class="kb-fase-grupo" data-fase="' + fase.clave + '">' +
         '<div class="kb-fase-header' + (colapsada ? ' colapsada' : '') + '" style="--fase-color:' + fase.color + '" onclick="ccToggleFaseKanban(\'' + fase.clave + '\')">' +
           '<div class="kb-fase-titulo"><i class="fa ' + fase.icono + '"></i> ' + fase.nombre + '<i class="fa fa-chevron-down kb-fase-chevron"></i></div>' +
           '<div class="kb-fase-resumen">' + itemsFase.length + ' · ' + ccMoneda(montoFase) + '</div>' +
@@ -1044,6 +1056,37 @@ function ccRenderKanban(datos) {
 function ccToggleFaseKanban(clave) {
   kbFaseColapsada[clave] = !kbFaseColapsada[clave];
   ccRenderKanban(ccDatosFiltrados());
+}
+
+/* ----- Todo lo del Resumen es "usable": tocar una fase/etapa/plaza/
+   fraccionamiento/vendedor te manda al Kanban ya filtrado/enfocado en eso. ----- */
+
+function ccIrAKanban(faseClave, etapaClave) {
+  DATA.fases.forEach(function (f) {
+    if (f.clave !== "cancelado") kbFaseColapsada[f.clave] = (f.clave !== faseClave);
+  });
+  ccCambiarTab("kanban");
+  setTimeout(function () {
+    var destino = etapaClave
+      ? document.querySelector('.kb-columna[data-etapa="' + etapaClave + '"]')
+      : document.querySelector('.kb-fase-grupo[data-fase="' + faseClave + '"]');
+    if (destino) destino.scrollIntoView({ behavior: "smooth", block: "start", inline: "start" });
+  }, 60);
+}
+
+function ccIrAKanbanFiltro(campo, valor) {
+  if (campo === "plaza") {
+    document.getElementById("fPlaza").value = valor;
+    ccFiltrarFraccPorPlaza();
+    ccFiltrarVendedorPorPlazaFracc();
+  } else if (campo === "fraccionamiento") {
+    document.getElementById("fFracc").value = valor;
+    ccFiltrarVendedorPorPlazaFracc();
+  } else if (campo === "vendedor") {
+    document.getElementById("fVendedor").value = valor;
+  }
+  ccRender();
+  ccCambiarTab("kanban");
 }
 
 /* ----- Detalle de cliente (solo lectura) ----- */

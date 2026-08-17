@@ -144,12 +144,16 @@ a{color:inherit;}
 .kpi.verde{border-left-color:var(--verde);}
 .kpi.naranja{border-left-color:var(--naranja);}
 .kpi.coral{border-left-color:var(--coral);}
+.kpi-clicable{cursor:pointer;}
+.kpi-clicable:active{background:#f5f6f8;}
 
 .card{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:16px 16px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .card-titulo{font-weight:800;font-size:1.02em;color:var(--tinta-fuerte);margin-bottom:12px;}
 
 .barra-fila{margin-bottom:14px;}
 .barra-fila:last-child{margin-bottom:0;}
+.barra-clicable{cursor:pointer;border-radius:8px;margin-left:-8px;margin-right:-8px;padding:6px 8px;}
+.barra-clicable:active{background:#f0f2f5;}
 .barra-cab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;font-size:0.92em;gap:8px;flex-wrap:wrap;}
 .barra-nombre{font-weight:700;color:var(--tinta-fuerte);display:flex;align-items:center;gap:7px;}
 .barra-valor{color:var(--tinta-suave);font-weight:600;font-size:0.82em;white-space:nowrap;}
