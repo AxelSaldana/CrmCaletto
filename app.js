@@ -719,11 +719,12 @@ function ccRenderEmbudo(datos) {
 
 var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
 
-// "Finalizado" tambien cuenta a cualquiera que YA tenga fecha de firma
-// capturada, aunque su etapa todavia diga "Firma" (fecha_firma a veces se
-// registra antes de que alguien mueva la tarjeta a la siguiente etapa).
+// "Finalizado" tambien cuenta a cualquiera que YA tenga fecha de fondeo o
+// de firma capturada, aunque su etapa todavia diga "Fondeo" o "Firma"
+// (esas fechas a veces se registran antes de que alguien mueva la tarjeta
+// a la siguiente etapa).
 function ccEsFinalizado(d) {
-  return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1 || !!d.fechaFirma;
+  return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1 || !!d.fechaFirma || !!d.fechaFondeo;
 }
 
 function ccRenderFirmasDetalle(datos) {
