@@ -593,8 +593,12 @@ var CC_ETAPAS_CITA = ["cita", "cita_realizada"];
 
 function ccRenderBanner(datos) {
   var sla = DATA.slaProspectoDias;
+  // Mismo criterio exacto que "Atención requerida" (fase !== "firmas"), para
+  // que este numero y esa lista siempre coincidan -- antes el banner tambien
+  // contaba clientes en Documentos/Avalúo/Fondeo/Firma que "Atención
+  // requerida" ya no muestra, y el total no cuadraba con la lista.
   var vencidos = datos.filter(function (d) {
-    return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) === -1 && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
+    return ccEtapaInfo(d.etapa).fase !== "firmas" && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
   }).length;
 
   var hoy = new Date().toISOString().substring(0, 10);
