@@ -577,7 +577,6 @@ function ccRender() {
   ccRenderAlertas(datos);
   ccRenderProximas(datos);
   ccRenderRanking(datos);
-  ccRenderTipoVendedor(datos);
   ccRenderPlaza(datos);
   ccRenderFraccionamiento(datos);
   ccRenderMotivos(datos);
@@ -850,7 +849,18 @@ function ccRenderRanking(datos) {
       .map(function (p) { return p + ": " + porPlaza[p]; })
       .join(" · ");
 
-    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v), plazasTexto: plazasTexto };
+    // Casos donde este vendedor trabajo en equipo con un vendedor externo
+    // (vendedorExterno trae el nombre de ese externo cuando aplica).
+    var porExterno = {};
+    items.forEach(function (d) {
+      if (d.vendedorExterno) porExterno[d.vendedorExterno] = (porExterno[d.vendedorExterno] || 0) + 1;
+    });
+    var externosTexto = Object.keys(porExterno)
+      .sort(function (a, b) { return porExterno[b] - porExterno[a]; })
+      .map(function (ext) { return ext + ": " + porExterno[ext]; })
+      .join(" · ");
+
+    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v), plazasTexto: plazasTexto, externosTexto: externosTexto };
   }).sort(function (a, b) { return b.monto - a.monto; });
 
   var maxMonto = Math.max.apply(null, filas.map(function (f) { return f.monto; }).concat([1]));
@@ -863,6 +873,7 @@ function ccRenderRanking(datos) {
         '<span class="barra-valor">' + ccMoneda(f.monto) + ' · ' + f.finalizados + ' fin.</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.color + '"></div></div>' +
         (f.plazasTexto ? '<div class="ranking-plazas">' + f.plazasTexto + '</div>' : '') +
+        (f.externosTexto ? '<div class="ranking-plazas ranking-externos"><i class="fa fa-handshake-o"></i> Con vendedor externo — ' + f.externosTexto + '</div>' : '') +
       '</div>';
   }).join("");
 }
@@ -890,16 +901,6 @@ function ccFilaApilada(nombre, items) {
       '<span class="barra-valor">' + total + ' · ' + ccMoneda(monto) + '</span></div>' +
       '<div class="barra-pista pista-apilada">' + segmentos + '</div>' +
     '</div>';
-}
-
-function ccRenderTipoVendedor(datos) {
-  var grupos = [
-    { nombre: "Vendedores", items: datos.filter(function (d) { return !d.esExterno; }) },
-    { nombre: "Vendedores externos", items: datos.filter(function (d) { return !!d.esExterno; }) }
-  ];
-  document.getElementById("porTipoVendedor").innerHTML = ccLeyendaFases() + grupos.map(function (g) {
-    return ccFilaApilada(g.nombre, g.items);
-  }).join("");
 }
 
 function ccRenderPlaza(datos) {
