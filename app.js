@@ -79,6 +79,15 @@ function ccQuitarDatosDeEjemplo() {
   });
 }
 
+// Cambio nomas de nombre (cosmetico): la etapa "finalizado" se sigue
+// llamando asi internamente (claves, filtros, navegacion), pero en pantalla
+// se muestra como "Proyecto Firmado".
+function ccRenombrarFinalizado() {
+  if (!DATA) return;
+  var etapaFinal = (DATA.etapas || []).filter(function (e) { return e.clave === "finalizado"; })[0];
+  if (etapaFinal) etapaFinal.nombre = "Proyecto Firmado";
+}
+
 // Un comentario "automatico" (registrado por el sistema/Gestor de Firma al
 // cambiar de estatus, no porque alguien le haya dado seguimiento de verdad)
 // no debe contar como si el cliente hubiera recibido atencion -- si no, el
@@ -140,6 +149,7 @@ function ccCargarDatos() {
     .then(function (json) {
       DATA = json;
       ccQuitarDatosDeEjemplo();
+      ccRenombrarFinalizado();
       ccRecalcularUltimoSeguimiento();
       ultimaActualizacion = new Date();
       ccAsignarColoresVendedores();
@@ -648,10 +658,11 @@ function ccRenderKpis(datos) {
   var enPreventa = datos.filter(function (d) { return ccEtapaInfo(d.etapa).fase === "preventa"; });
   var totalPreventa = enPreventa.length;
   var montoPreventa = enPreventa.reduce(function (s, d) { return s + d.monto; }, 0);
+  var infoFinalKpi = ccEtapaInfo("finalizado");
 
   document.getElementById("kpis").innerHTML =
     '<div class="kpi kpi-clicable" onclick="ccIrAKanban(\'preventa\')"><div class="n">' + totalPreventa + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoPreventa) + '</div></div>' +
-    '<div class="kpi verde kpi-clicable" onclick="ccIrAKanban(\'firmas\',\'finalizado\')"><div class="n">' + cerrados.length + '</div><div class="l">Finalizado</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
+    '<div class="kpi verde kpi-clicable" onclick="ccIrAKanban(\'firmas\',\'finalizado\')"><div class="n">' + cerrados.length + '</div><div class="l">' + infoFinalKpi.nombre + '</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
     '<div class="kpi naranja"><div class="n">' + tasa + '%</div><div class="l">Conversión</div><div class="s">Global</div></div>' +
     '<div class="kpi coral"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
 }
@@ -680,7 +691,7 @@ function ccRenderEmbudo(datos) {
   var infoFinal = ccEtapaInfo("finalizado");
   var itemsFinal = datos.filter(ccEsFinalizado);
   var filaFinalizado = {
-    fase: { clave: "finalizado", nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
+    fase: { clave: "finalizado", nombre: infoFinal.nombre, icono: infoFinal.icono, color: infoFinal.color },
     count: itemsFinal.length,
     monto: itemsFinal.reduce(function (s, d) { return s + d.monto; }, 0)
   };
@@ -719,6 +730,11 @@ function ccRenderEmbudo(datos) {
 
 var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
 
+// "Documentos" y "Avalúo" se muestran unidas como una sola etapa visual,
+// "Firmas en proceso" -- son los dos primeros pasos de Firmas y en la
+// práctica se siguen juntos.
+var CC_FIRMAS_ETAPA_PROCESO = ["documentos", "avaluo"];
+
 // "Finalizado" tambien cuenta a cualquiera que YA tenga fecha de fondeo o
 // de firma capturada, aunque su etapa todavia diga "Fondeo" o "Firma"
 // (esas fechas a veces se registran antes de que alguien mueva la tarjeta
@@ -728,7 +744,9 @@ function ccEsFinalizado(d) {
 }
 
 function ccRenderFirmasDetalle(datos) {
-  var etapasFirmas = DATA.etapas.filter(function (e) { return e.fase === "firmas" && CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; });
+  var etapasFirmas = DATA.etapas.filter(function (e) {
+    return e.fase === "firmas" && CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1 && CC_FIRMAS_ETAPA_PROCESO.indexOf(e.clave) === -1;
+  });
   var filas = etapasFirmas.map(function (etapa) {
     // Si ya cuenta como Finalizado (por fechaFirma), que no se quede
     // tambien contado en su etapa individual (ej. "Firma") -- se mueve
@@ -738,10 +756,18 @@ function ccRenderFirmasDetalle(datos) {
     return { etapa: etapa, count: items.length, monto: monto };
   });
 
+  var itemsProceso = datos.filter(function (d) { return CC_FIRMAS_ETAPA_PROCESO.indexOf(d.etapa) !== -1 && !ccEsFinalizado(d); });
+  var infoProceso = ccEtapaInfo("documentos");
+  filas.unshift({
+    etapa: { clave: "firmas_proceso", nombre: "Firmas en proceso", icono: infoProceso.icono, color: infoProceso.color },
+    count: itemsProceso.length,
+    monto: itemsProceso.reduce(function (s, d) { return s + d.monto; }, 0)
+  });
+
   var itemsFinal = datos.filter(ccEsFinalizado);
   var infoFinal = ccEtapaInfo("finalizado");
   filas.push({
-    etapa: { clave: "finalizado", nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color },
+    etapa: { clave: "finalizado", nombre: infoFinal.nombre, icono: infoFinal.icono, color: infoFinal.color },
     count: itemsFinal.length,
     monto: itemsFinal.reduce(function (s, d) { return s + d.monto; }, 0)
   });
@@ -1059,8 +1085,16 @@ function ccRenderKanban(datos) {
       etapasColumnas = etapasColumnas.concat(DATA.etapas.filter(function (e) { return e.clave === "cancelado"; }));
     } else if (fase.clave === "firmas") {
       var infoFinal = ccEtapaInfo("finalizado");
-      etapasColumnas = etapasColumnas.filter(function (e) { return CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1; })
-        .concat([{ clave: "finalizado", claves: CC_FIRMAS_ETAPA_FINAL, nombre: "Finalizado", icono: infoFinal.icono, color: infoFinal.color }]);
+      var infoProceso = ccEtapaInfo("documentos");
+      var idxProceso = 0;
+      for (var j = 0; j < etapasColumnas.length; j++) { if (etapasColumnas[j].clave === "documentos") { idxProceso = j; break; } }
+      etapasColumnas = etapasColumnas.filter(function (e) {
+        return CC_FIRMAS_ETAPA_FINAL.indexOf(e.clave) === -1 && CC_FIRMAS_ETAPA_PROCESO.indexOf(e.clave) === -1;
+      });
+      etapasColumnas.splice(Math.min(idxProceso, etapasColumnas.length), 0, {
+        clave: "firmas_proceso", claves: CC_FIRMAS_ETAPA_PROCESO, nombre: "Firmas en proceso", icono: infoProceso.icono, color: infoProceso.color
+      });
+      etapasColumnas = etapasColumnas.concat([{ clave: "finalizado", claves: CC_FIRMAS_ETAPA_FINAL, nombre: infoFinal.nombre, icono: infoFinal.icono, color: infoFinal.color }]);
     }
     var columnasHtml = etapasColumnas.map(function (etapa) { return ccRenderColumnaKanban(etapa, datos); }).join("");
 
