@@ -79,6 +79,35 @@ function ccQuitarDatosDeEjemplo() {
   });
 }
 
+// Un comentario "automatico" (registrado por el sistema/Gestor de Firma al
+// cambiar de estatus, no porque alguien le haya dado seguimiento de verdad)
+// no debe contar como si el cliente hubiera recibido atencion -- si no, el
+// contador de "dias sin seguimiento" se resetea solo sin que nadie haya
+// hecho nada.
+function ccEsSeguimientoAutomatico(s) {
+  var canal = (s.canal || "").toLowerCase();
+  var autor = (s.autor || "").toLowerCase();
+  var texto = (s.texto || "").toLowerCase();
+  if (canal === "proceso") return true;
+  if (canal.indexOf("sistema") !== -1 || autor.indexOf("sistema") !== -1) return true;
+  if (texto.indexOf("gestor de firma") !== -1) return true;
+  return false;
+}
+
+function ccRecalcularUltimoSeguimiento() {
+  DATA.clientes.forEach(function (d) {
+    if (!d.seguimientos || !d.seguimientos.length) return;
+    var humanos = d.seguimientos.filter(function (s) { return !ccEsSeguimientoAutomatico(s); });
+    if (humanos.length) {
+      d.ultimoSeguimiento = humanos.reduce(function (a, b) { return a.fecha > b.fecha ? a : b; }).fecha;
+    } else {
+      // solo hay entradas automaticas -- no cuenta como seguimiento real,
+      // se trata como si no hubiera nada desde que entro a esta etapa
+      d.ultimoSeguimiento = d.etapaDesde;
+    }
+  });
+}
+
 function ccCargarDatos() {
   // Evita que toques repetidos del boton de refrescar (o un cambio de
   // pestaña que llegue mientras ya hay una peticion en curso) disparen
@@ -111,6 +140,7 @@ function ccCargarDatos() {
     .then(function (json) {
       DATA = json;
       ccQuitarDatosDeEjemplo();
+      ccRecalcularUltimoSeguimiento();
       ultimaActualizacion = new Date();
       ccAsignarColoresVendedores();
       ccPoblarFiltros();
@@ -601,7 +631,6 @@ setInterval(ccRenderTimestamp, 30000);
 function ccRenderKpis(datos) {
   var sla = DATA.slaProspectoDias;
   var total = datos.length;
-  var montoTotal = datos.reduce(function (s, d) { return s + d.monto; }, 0);
   var cerrados = datos.filter(function (d) { return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) !== -1; });
   var montoCerrado = cerrados.reduce(function (s, d) { return s + d.monto; }, 0);
   var tasa = total ? Math.round((cerrados.length / total) * 100) : 0;
@@ -609,8 +638,15 @@ function ccRenderKpis(datos) {
     return CC_FIRMAS_ETAPA_FINAL.indexOf(d.etapa) === -1 && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
   });
 
+  // "En pipeline" es especificamente Preventa -- listo para cuando se
+  // conecte a datos reales. Los cancelados quedan fuera solos, porque su
+  // fase es "cancelado", nunca "preventa".
+  var enPreventa = datos.filter(function (d) { return ccEtapaInfo(d.etapa).fase === "preventa"; });
+  var totalPreventa = enPreventa.length;
+  var montoPreventa = enPreventa.reduce(function (s, d) { return s + d.monto; }, 0);
+
   document.getElementById("kpis").innerHTML =
-    '<div class="kpi"><div class="n">' + total + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoTotal) + '</div></div>' +
+    '<div class="kpi"><div class="n">' + totalPreventa + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoPreventa) + '</div></div>' +
     '<div class="kpi verde"><div class="n">' + cerrados.length + '</div><div class="l">Finalizado</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
     '<div class="kpi naranja"><div class="n">' + tasa + '%</div><div class="l">Conversión</div><div class="s">Global</div></div>' +
     '<div class="kpi coral"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
