@@ -532,6 +532,22 @@ function ccToggleMetaLista() {
   ccRenderMetaMes();
 }
 
+// El "monto" del cliente es el precio de venta del contrato -- pero el
+// fondeo real a veces es parcial (ej. ya se habia cubierto un enganche
+// antes), y el sistema lo registra en el comentario automatico "Fecha de
+// fondeo registrada... Monto: $X". Cuando ese monto especifico existe, es
+// mas fiel a cuanto dinero entro de verdad que el precio de venta completo.
+function ccMontoFondeoReal(d) {
+  if (!d.seguimientos || !d.seguimientos.length) return d.monto;
+  var encontrado = null;
+  d.seguimientos.forEach(function (s) {
+    if (!s.texto || s.texto.toLowerCase().indexOf("fondeo registrada") === -1) return;
+    var m = s.texto.match(/Monto:\s*\$?\s*([\d,]+(?:\.\d+)?)/i);
+    if (m) encontrado = parseFloat(m[1].replace(/,/g, ""));
+  });
+  return encontrado !== null ? encontrado : d.monto;
+}
+
 function ccRenderMetaMes() {
   var card = document.getElementById("cardMeta");
   var cont = document.getElementById("metaMes");
@@ -553,11 +569,11 @@ function ccRenderMetaMes() {
   }
   var clientesActual = cerrados.filter(function (d) { return enRango(d, desdeActual, hastaActual); })
     .sort(function (a, b) { return b.fechaFondeo < a.fechaFondeo ? -1 : 1; });
-  var montoActual = clientesActual.reduce(function (s, d) { return s + d.monto; }, 0);
+  var montoActual = clientesActual.reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0);
 
   var rangoAnterior = esPersonalizado ? null : ccRangoPeriodoAnterior(clave);
   var montoAnterior = rangoAnterior
-    ? cerrados.filter(function (d) { return enRango(d, rangoAnterior.desde, rangoAnterior.hasta); }).reduce(function (s, d) { return s + d.monto; }, 0)
+    ? cerrados.filter(function (d) { return enRango(d, rangoAnterior.desde, rangoAnterior.hasta); }).reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0)
     : 0;
 
   if (tituloEl) tituloEl.textContent = CC_PERIODO_TITULO_META[clave] || "Total del periodo";
@@ -595,7 +611,7 @@ function ccRenderMetaMes() {
     listaHtml = '<div class="alertas-lista expandida">' + clientesActual.map(function (d) {
       return '<div class="item clicable" onclick="ccAbrirDetalle(' + d.id + ')">' +
         '<div><div class="item-nombre">' + d.nombre + '</div><div class="item-sub">' + d.vendedor + ' · ' + d.fechaFondeo + '</div></div>' +
-        '<span class="item-chip ok">' + ccMoneda(d.monto) + '</span>' +
+        '<span class="item-chip ok">' + ccMoneda(ccMontoFondeoReal(d)) + '</span>' +
       '</div>';
     }).join("") + '</div>';
   }
