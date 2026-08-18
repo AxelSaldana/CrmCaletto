@@ -926,12 +926,17 @@ function ccRenderRanking(datos) {
     var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     // Los ingresos cuentan clientes que YA llegaron a "Liberado" -- ahi es
     // cuando la venta se considera ganada -- sin importar si despues avanzan
-    // a Firmas (documentos, fondeo, etc). Cierre de expediente (antes de
-    // Liberado) no cuenta, esa venta todavia no se considera cerrada. El
-    // periodo activo ya filtro "items" por etapaDesde (ver ccDatosFiltrados),
-    // asi que aqui no hace falta exigir fechaFondeo dentro del rango.
-    var monto = items.filter(function (d) { return d.etapa === "liberado" || ccEtapaInfo(d.etapa).fase === "firmas"; })
-      .reduce(function (s, d) { return s + d.monto; }, 0);
+    // a Firmas (documentos, fondeo, etc). "Cierre de expediente" tambien
+    // cuenta si ya tiene el expediente fisico integrado (docs.expediente) --
+    // en la practica ya esta liberado, solo falta que alguien mueva la
+    // tarjeta. El periodo activo ya filtro "items" por etapaDesde (ver
+    // ccDatosFiltrados), asi que aqui no hace falta exigir fechaFondeo
+    // dentro del rango.
+    var monto = items.filter(function (d) {
+      return d.etapa === "liberado" ||
+        (d.etapa === "cierre_expediente" && d.docs && d.docs.expediente) ||
+        ccEtapaInfo(d.etapa).fase === "firmas";
+    }).reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(ccEsFinalizado).length;
 
     var porPlaza = {};
