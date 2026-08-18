@@ -475,15 +475,13 @@ function ccActualizarFiltrosBadge() {
 
 var CC_NOMBRES_MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
-var CC_PERIODO_TITULO_META = {
-  hoy: "Meta de hoy", semana: "Meta de la semana", mes: "Meta del mes",
-  mesPasado: "Cerrado el mes pasado", anio: "Meta del año",
-  todo: "Total cerrado", personalizado: "Total del periodo"
-};
+// "Ingresos" es especificamente dinero ya fondeado (fechaFondeo) -- se deja
+// explicito en el texto para no confundirse con "Proyecto Firmado" (que es
+// estatus del tramite/papeleo, no necesariamente dinero recibido).
 var CC_PERIODO_ETIQUETA_CERRADO = {
-  hoy: "cerrado hoy", semana: "cerrado esta semana", mes: "cerrado este mes",
-  mesPasado: "cerrado el mes pasado", anio: "cerrado este año",
-  todo: "cerrado en total", personalizado: "cerrado en el rango"
+  hoy: "fondeado hoy", semana: "fondeado esta semana", mes: "fondeado este mes",
+  mesPasado: "fondeado el mes pasado", anio: "fondeado este año",
+  todo: "fondeado en total", personalizado: "fondeado en el rango"
 };
 
 // El periodo anterior "equivalente" para el comparativo, segun que chip
@@ -536,18 +534,11 @@ function ccMontoFondeoReal(d) {
   return encontrado !== null ? encontrado : d.monto;
 }
 
-/* ----- Ingresos: hace lo mismo que antes hacia "Meta del mes" (mismo
-   criterio -- fechaFondeo dentro del rango --, misma barra de meta cuando
-   aplica, mismo comparativo contra el periodo anterior, misma lista
-   expandible), solo que el periodo lo elige esta tarjeta con sus propios
-   chips (Semana/Mes/Año/Periodo activo) en vez del filtro de arriba. */
-var CC_INGRESOS_PERIODO = "mes";
+/* ----- Ingresos: mismo criterio de siempre (fechaFondeo dentro del rango),
+   barra de meta cuando aplica, comparativo contra el periodo anterior, y
+   lista expandible. Sigue el mismo filtro de periodo de arriba (Filtros),
+   sin selector propio. ----- */
 var ccIngresosListaVisible = false;
-
-function ccIngresosCambiarPeriodo(clave) {
-  CC_INGRESOS_PERIODO = clave;
-  ccRenderIngresos();
-}
 
 function ccToggleIngresosLista() {
   ccIngresosListaVisible = !ccIngresosListaVisible;
@@ -558,13 +549,7 @@ function ccRenderIngresos() {
   var cont = document.getElementById("ingresosMonto");
   if (!cont || !DATA) return;
 
-  document.querySelectorAll("#ingresosChips .periodo-chip").forEach(function (btn) {
-    btn.classList.toggle("activo", btn.getAttribute("data-periodo") === CC_INGRESOS_PERIODO);
-  });
-
-  // "Periodo activo" sigue lo que este elegido arriba en Filtros; los otros
-  // 3 chips son fijos, sin importar el filtro global.
-  var clave = CC_INGRESOS_PERIODO === "periodo" ? CC_PERIODO_ACTIVO : CC_INGRESOS_PERIODO;
+  var clave = CC_PERIODO_ACTIVO;
   var esPersonalizado = clave === "personalizado";
   var rangoActual = esPersonalizado ? null : ccRangoPeriodo(clave);
   var desdeActual = esPersonalizado ? document.getElementById("fFechaDesde").value : rangoActual.desde;
@@ -586,14 +571,14 @@ function ccRenderIngresos() {
     ? cerrados.filter(function (d) { return enRango(d, rangoAnterior.desde, rangoAnterior.hasta); }).reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0)
     : 0;
 
-  var etiquetaCerrado = CC_PERIODO_ETIQUETA_CERRADO[clave] || "cerrado en el rango";
+  var etiquetaCerrado = CC_PERIODO_ETIQUETA_CERRADO[clave] || "fondeado en el rango";
 
   var montoHtml;
   if (clave === "mes" && DATA.metaMensual && DATA.metaMensual > 0) {
     var pct = Math.round((montoActual / DATA.metaMensual) * 100);
     var pctBarra = Math.min(pct, 100);
     montoHtml =
-      '<div class="meta-cifras meta-clicable" onclick="ccToggleIngresosLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
+      '<div class="meta-cifras meta-clicable" onclick="ccToggleIngresosLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> fondeado de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
       '<div class="barra-pista meta-barra"><div class="barra-fill" style="width:' + pctBarra + '%;background:' + (pct >= 100 ? "#00a65a" : "#2a78d6") + '">' + pct + '%</div></div>';
   } else {
     montoHtml = '<div class="meta-cifras meta-clicable" onclick="ccToggleIngresosLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> ' + etiquetaCerrado + '</span></div>';

@@ -69,7 +69,6 @@ a{color:inherit;}
 .filtros-panel{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
 
 .periodos-rapidos{display:flex;gap:7px;flex-wrap:wrap;}
-#ingresosChips{margin-bottom:12px;}
 .periodo-chip{border:1px solid var(--linea);background:#fff;color:var(--tinta-suave);font-size:0.85em;font-weight:700;
   padding:7px 12px;border-radius:20px;cursor:pointer;}
 .periodo-chip.activo{background:var(--azul);border-color:var(--azul);color:#fff;}
