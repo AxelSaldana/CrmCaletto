@@ -520,18 +520,6 @@ function ccRangoPeriodoAnterior(clave) {
   return null;
 }
 
-// La meta/comparativo sigue el mismo periodo activo en Filtros (Hoy/Esta
-// semana/Este mes/etc). La barra de % contra la meta mensual solo aparece
-// cuando el periodo es exactamente "Este mes", porque DATA.metaMensual es
-// una meta mensual -- no tendria sentido compararla contra un año o una
-// semana.
-var ccMetaListaVisible = false;
-
-function ccToggleMetaLista() {
-  ccMetaListaVisible = !ccMetaListaVisible;
-  ccRenderMetaMes();
-}
-
 // El "monto" del cliente es el precio de venta del contrato -- pero el
 // fondeo real a veces es parcial (ej. ya se habia cubierto un enganche
 // antes), y el sistema lo registra en el comentario automatico "Fecha de
@@ -548,19 +536,41 @@ function ccMontoFondeoReal(d) {
   return encontrado !== null ? encontrado : d.monto;
 }
 
-function ccRenderMetaMes() {
-  var card = document.getElementById("cardMeta");
-  var cont = document.getElementById("metaMes");
-  var tituloEl = document.getElementById("metaMesTitulo");
-  if (!card || !cont || !DATA) return;
+/* ----- Ingresos: hace lo mismo que antes hacia "Meta del mes" (mismo
+   criterio -- fechaFondeo dentro del rango --, misma barra de meta cuando
+   aplica, mismo comparativo contra el periodo anterior, misma lista
+   expandible), solo que el periodo lo elige esta tarjeta con sus propios
+   chips (Semana/Mes/Año/Periodo activo) en vez del filtro de arriba. */
+var CC_INGRESOS_PERIODO = "mes";
+var ccIngresosListaVisible = false;
 
-  var clave = CC_PERIODO_ACTIVO;
+function ccIngresosCambiarPeriodo(clave) {
+  CC_INGRESOS_PERIODO = clave;
+  ccRenderIngresos();
+}
+
+function ccToggleIngresosLista() {
+  ccIngresosListaVisible = !ccIngresosListaVisible;
+  ccRenderIngresos();
+}
+
+function ccRenderIngresos() {
+  var cont = document.getElementById("ingresosMonto");
+  if (!cont || !DATA) return;
+
+  document.querySelectorAll("#ingresosChips .periodo-chip").forEach(function (btn) {
+    btn.classList.toggle("activo", btn.getAttribute("data-periodo") === CC_INGRESOS_PERIODO);
+  });
+
+  // "Periodo activo" sigue lo que este elegido arriba en Filtros; los otros
+  // 3 chips son fijos, sin importar el filtro global.
+  var clave = CC_INGRESOS_PERIODO === "periodo" ? CC_PERIODO_ACTIVO : CC_INGRESOS_PERIODO;
   var esPersonalizado = clave === "personalizado";
   var rangoActual = esPersonalizado ? null : ccRangoPeriodo(clave);
   var desdeActual = esPersonalizado ? document.getElementById("fFechaDesde").value : rangoActual.desde;
   var hastaActual = esPersonalizado ? document.getElementById("fFechaHasta").value : rangoActual.hasta;
 
-  // "Cerrado" = ya tiene fecha de fondeo capturada, sin importar en que
+  // "Ingreso" = ya tiene fecha de fondeo capturada, sin importar en que
   // etapa este ahora (aunque ya haya avanzado a Firma/Escrituras/etc, sigue
   // contando en el periodo en que realmente se fondeo).
   var cerrados = DATA.clientes.filter(function (d) { return !!d.fechaFondeo; });
@@ -576,18 +586,17 @@ function ccRenderMetaMes() {
     ? cerrados.filter(function (d) { return enRango(d, rangoAnterior.desde, rangoAnterior.hasta); }).reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0)
     : 0;
 
-  if (tituloEl) tituloEl.textContent = CC_PERIODO_TITULO_META[clave] || "Total del periodo";
   var etiquetaCerrado = CC_PERIODO_ETIQUETA_CERRADO[clave] || "cerrado en el rango";
 
-  var metaHtml;
+  var montoHtml;
   if (clave === "mes" && DATA.metaMensual && DATA.metaMensual > 0) {
     var pct = Math.round((montoActual / DATA.metaMensual) * 100);
     var pctBarra = Math.min(pct, 100);
-    metaHtml =
-      '<div class="meta-cifras meta-clicable" onclick="ccToggleMetaLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
+    montoHtml =
+      '<div class="meta-cifras meta-clicable" onclick="ccToggleIngresosLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
       '<div class="barra-pista meta-barra"><div class="barra-fill" style="width:' + pctBarra + '%;background:' + (pct >= 100 ? "#00a65a" : "#2a78d6") + '">' + pct + '%</div></div>';
   } else {
-    metaHtml = '<div class="meta-cifras meta-clicable" onclick="ccToggleMetaLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> ' + etiquetaCerrado + '</span></div>';
+    montoHtml = '<div class="meta-cifras meta-clicable" onclick="ccToggleIngresosLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> ' + etiquetaCerrado + '</span></div>';
   }
 
   var cambioHtml = "";
@@ -603,11 +612,11 @@ function ccRenderMetaMes() {
   }
 
   var verLink = clientesActual.length
-    ? '<div class="ver-mas" onclick="ccToggleMetaLista()">' + (ccMetaListaVisible ? "Ocultar" : "Ver cuáles (" + clientesActual.length + ")") + '</div>'
+    ? '<div class="ver-mas" onclick="ccToggleIngresosLista()">' + (ccIngresosListaVisible ? "Ocultar" : "Ver cuáles (" + clientesActual.length + ")") + '</div>'
     : "";
 
   var listaHtml = "";
-  if (ccMetaListaVisible && clientesActual.length) {
+  if (ccIngresosListaVisible && clientesActual.length) {
     listaHtml = '<div class="alertas-lista expandida">' + clientesActual.map(function (d) {
       return '<div class="item clicable" onclick="ccAbrirDetalle(' + d.id + ')">' +
         '<div><div class="item-nombre">' + d.nombre + '</div><div class="item-sub">' + d.vendedor + ' · ' + d.fechaFondeo + '</div></div>' +
@@ -616,54 +625,11 @@ function ccRenderMetaMes() {
     }).join("") + '</div>';
   }
 
-  card.style.display = "";
-  cont.innerHTML = metaHtml + cambioHtml + verLink + listaHtml;
-}
-
-/* ----- Ingresos (tarjeta aparte de Meta del mes, con su propio selector de
-   periodo -- Semana/Mes/Año fijos, o "Periodo activo" para seguir el filtro
-   de arriba). Mismo criterio de "ingreso" que ya usa Meta del mes -- ya
-   tiene fecha de fondeo capturada, dentro del rango -- solo que aqui el
-   rango lo elige esta tarjeta, no el filtro de Meta del mes. ----- */
-var CC_INGRESOS_PERIODO = "mes";
-var CC_INGRESOS_ETIQUETAS = { semana: "esta semana", mes: "este mes", anio: "este año", periodo: "en el periodo activo" };
-
-function ccIngresosCambiarPeriodo(clave) {
-  CC_INGRESOS_PERIODO = clave;
-  ccRenderIngresos();
-}
-
-function ccRenderIngresos() {
-  var cont = document.getElementById("ingresosMonto");
-  if (!cont || !DATA) return;
-
-  document.querySelectorAll("#ingresosChips .periodo-chip").forEach(function (btn) {
-    btn.classList.toggle("activo", btn.getAttribute("data-periodo") === CC_INGRESOS_PERIODO);
-  });
-
-  var rango;
-  if (CC_INGRESOS_PERIODO === "periodo") {
-    var claveActiva = CC_PERIODO_ACTIVO;
-    if (claveActiva === "personalizado") {
-      rango = { desde: document.getElementById("fFechaDesde").value, hasta: document.getElementById("fFechaHasta").value };
-    } else {
-      rango = ccRangoPeriodo(claveActiva);
-    }
-  } else {
-    rango = ccRangoPeriodo(CC_INGRESOS_PERIODO);
-  }
-  var items = DATA.clientes.filter(function (d) {
-    return !!d.fechaFondeo && (!rango.desde || d.fechaFondeo >= rango.desde) && (!rango.hasta || d.fechaFondeo <= rango.hasta);
-  });
-  var monto = items.reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0);
-
-  cont.innerHTML = '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(monto) + '</span><span class="meta-de"> ' +
-    (CC_INGRESOS_ETIQUETAS[CC_INGRESOS_PERIODO] || "") + '</span></div>';
+  cont.innerHTML = montoHtml + cambioHtml + verLink + listaHtml;
 }
 
 function ccRender() {
   ccActualizarFiltrosBadge();
-  ccRenderMetaMes();
   ccRenderIngresos();
   var datos = ccDatosFiltrados();
   ccRenderBanner(datos);
