@@ -938,16 +938,33 @@ function ccRenderRanking(datos) {
   });
   vendedoresVisibles.sort();
 
+  // Rango del periodo activo -- para saber si un cliente que ya esta en
+  // Firmas de verdad fondeo DENTRO de ese periodo, en vez de solo haber
+  // tenido actividad/movimiento reciente.
+  var claveP = CC_PERIODO_ACTIVO;
+  var esTodo = claveP === "todo";
+  var rangoP = esTodo ? null : (claveP === "personalizado"
+    ? { desde: document.getElementById("fFechaDesde").value, hasta: document.getElementById("fFechaHasta").value }
+    : ccRangoPeriodo(claveP));
+
   var filas = vendedoresVisibles.map(function (v) {
     var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     // Los ingresos cuentan clientes en fase "Venta" (Cierre de expediente o
     // Liberado) o ya en Firmas -- desde Cierre de expediente en adelante la
-    // venta ya se considera ganada, sin importar si despues avanza. El
-    // periodo activo ya filtro "items" por etapaDesde (ver ccDatosFiltrados),
-    // asi que aqui no hace falta exigir fechaFondeo dentro del rango.
+    // venta ya se considera ganada, sin importar si despues avanza. Cierre
+    // de expediente/Liberado no tienen fechaFondeo (ese campo es propio de
+    // Firmas/Hipotecario), asi que ahi se sigue usando que esten dentro del
+    // periodo por etapaDesde (items ya viene filtrado asi, ver
+    // ccDatosFiltrados). Un cliente ya en Firmas, en cambio, solo cuenta en
+    // un periodo especifico si su fechaFondeo cae DENTRO de ese periodo --
+    // si no, actividad reciente sin fondeo real inflaba el ingreso de un mes
+    // en el que no entro dinero de verdad.
     var monto = items.filter(function (d) {
       var fase = ccEtapaInfo(d.etapa).fase;
-      return fase === "venta" || fase === "firmas";
+      if (fase === "venta") return true;
+      if (fase !== "firmas") return false;
+      if (esTodo) return true;
+      return !!d.fechaFondeo && (!rangoP.desde || d.fechaFondeo >= rangoP.desde) && (!rangoP.hasta || d.fechaFondeo <= rangoP.hasta);
     }).reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(ccEsFinalizado).length;
 
