@@ -67,18 +67,6 @@ function ccBuscarDebounced() {
   ccBuscarTimeout = setTimeout(ccRender, 200);
 }
 
-// Preventa (Primer contacto, Cita realizada, Negociación) sigue siendo
-// datos de ejemplo hardcodeados en el backend, no conectados a la BD real.
-// Se quitan solo los clientes falsos -- la fase Preventa se queda visible
-// en el embudo/Kanban, nomas que en 0, en vez de desaparecer del todo.
-function ccQuitarDatosDeEjemplo() {
-  if (!DATA) return;
-  DATA.clientes = (DATA.clientes || []).filter(function (d) {
-    var info = DATA.etapas.filter(function (e) { return e.clave === d.etapa; })[0];
-    return !info || info.fase !== "preventa";
-  });
-}
-
 // Cambio nomas de nombre (cosmetico): la etapa "finalizado" se sigue
 // llamando asi internamente (claves, filtros, navegacion), pero en pantalla
 // se muestra como "Proyecto Firmado".
@@ -154,7 +142,6 @@ function ccCargarDatos() {
     })
     .then(function (json) {
       DATA = json;
-      ccQuitarDatosDeEjemplo();
       ccRenombrarFinalizado();
       ccRecalcularUltimoSeguimiento();
       ultimaActualizacion = new Date();
