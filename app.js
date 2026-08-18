@@ -519,6 +519,13 @@ function ccRangoPeriodoAnterior(clave) {
 // cuando el periodo es exactamente "Este mes", porque DATA.metaMensual es
 // una meta mensual -- no tendria sentido compararla contra un año o una
 // semana.
+var ccMetaListaVisible = false;
+
+function ccToggleMetaLista() {
+  ccMetaListaVisible = !ccMetaListaVisible;
+  ccRenderMetaMes();
+}
+
 function ccRenderMetaMes() {
   var card = document.getElementById("cardMeta");
   var cont = document.getElementById("metaMes");
@@ -538,8 +545,9 @@ function ccRenderMetaMes() {
   function enRango(d, desde, hasta) {
     return (!desde || d.fechaFondeo >= desde) && (!hasta || d.fechaFondeo <= hasta);
   }
-  var montoActual = cerrados.filter(function (d) { return enRango(d, desdeActual, hastaActual); })
-    .reduce(function (s, d) { return s + d.monto; }, 0);
+  var clientesActual = cerrados.filter(function (d) { return enRango(d, desdeActual, hastaActual); })
+    .sort(function (a, b) { return b.fechaFondeo < a.fechaFondeo ? -1 : 1; });
+  var montoActual = clientesActual.reduce(function (s, d) { return s + d.monto; }, 0);
 
   var rangoAnterior = esPersonalizado ? null : ccRangoPeriodoAnterior(clave);
   var montoAnterior = rangoAnterior
@@ -554,10 +562,10 @@ function ccRenderMetaMes() {
     var pct = Math.round((montoActual / DATA.metaMensual) * 100);
     var pctBarra = Math.min(pct, 100);
     metaHtml =
-      '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
+      '<div class="meta-cifras meta-clicable" onclick="ccToggleMetaLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> de ' + ccMoneda(DATA.metaMensual) + '</span></div>' +
       '<div class="barra-pista meta-barra"><div class="barra-fill" style="width:' + pctBarra + '%;background:' + (pct >= 100 ? "#00a65a" : "#2a78d6") + '">' + pct + '%</div></div>';
   } else {
-    metaHtml = '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> ' + etiquetaCerrado + '</span></div>';
+    metaHtml = '<div class="meta-cifras meta-clicable" onclick="ccToggleMetaLista()"><span class="meta-monto">' + ccMoneda(montoActual) + '</span><span class="meta-de"> ' + etiquetaCerrado + '</span></div>';
   }
 
   var cambioHtml = "";
@@ -572,8 +580,22 @@ function ccRenderMetaMes() {
     }
   }
 
+  var verLink = clientesActual.length
+    ? '<div class="ver-mas" onclick="ccToggleMetaLista()">' + (ccMetaListaVisible ? "Ocultar" : "Ver cuáles (" + clientesActual.length + ")") + '</div>'
+    : "";
+
+  var listaHtml = "";
+  if (ccMetaListaVisible && clientesActual.length) {
+    listaHtml = '<div class="alertas-lista expandida">' + clientesActual.map(function (d) {
+      return '<div class="item clicable" onclick="ccAbrirDetalle(' + d.id + ')">' +
+        '<div><div class="item-nombre">' + d.nombre + '</div><div class="item-sub">' + d.vendedor + ' · ' + d.fechaFondeo + '</div></div>' +
+        '<span class="item-chip ok">' + ccMoneda(d.monto) + '</span>' +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
   card.style.display = "";
-  cont.innerHTML = metaHtml + cambioHtml;
+  cont.innerHTML = metaHtml + cambioHtml + verLink + listaHtml;
 }
 
 function ccRender() {

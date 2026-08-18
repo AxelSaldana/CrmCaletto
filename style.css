@@ -164,6 +164,7 @@ a{color:inherit;}
   padding-right:8px;color:#fff;font-weight:700;font-size:0.78em;white-space:nowrap;transition:width .3s;}
 
 .meta-cifras{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.meta-clicable{cursor:pointer;}
 .meta-monto{font-size:1.5em;font-weight:800;color:var(--tinta-fuerte);}
 .meta-de{color:var(--tinta-suave);font-size:0.9em;font-weight:600;}
 .meta-barra{height:26px;margin-bottom:10px;}
