@@ -906,10 +906,8 @@ function ccRenderRanking(datos) {
     var propios = items.filter(function (d) { return !d.vendedorExterno; }).length;
     var externos = items.length - propios;
 
-    return { vendedor: v, monto: monto, finalizados: finalizados, color: ccVendedorColor(v), plazasTexto: plazasTexto, propios: propios, externos: externos, total: items.length };
+    return { vendedor: v, monto: monto, finalizados: finalizados, plazasTexto: plazasTexto, propios: propios, externos: externos, total: items.length };
   }).sort(function (a, b) { return b.monto - a.monto; });
-
-  var maxMonto = Math.max.apply(null, filas.map(function (f) { return f.monto; }).concat([1]));
 
   var leyendaExternos = '<div class="leyenda">' +
     '<span class="leyenda-item"><span class="leyenda-punto" style="background:var(--azul)"></span>Propias</span>' +
@@ -917,7 +915,6 @@ function ccRenderRanking(datos) {
     '</div>';
 
   document.getElementById("ranking").innerHTML = leyendaExternos + filas.map(function (f) {
-    var pct = Math.max(Math.round((f.monto / maxMonto) * 100), f.monto ? 6 : 0);
     var pctPropios = f.total ? (f.propios / f.total) * 100 : 0;
     var pctExternos = f.total ? (f.externos / f.total) * 100 : 0;
     var segmentos = '' +
@@ -927,9 +924,8 @@ function ccRenderRanking(datos) {
       '<div class="barra-fila barra-clicable" onclick="ccIrAKanbanFiltro(\'vendedor\',\'' + f.vendedor.replace(/'/g, "\\'") + '\')">' +
         '<div class="barra-cab"><span class="barra-nombre">' + f.vendedor + '</span>' +
         '<span class="barra-valor">' + ccMoneda(f.monto) + ' · ' + f.finalizados + ' fin.</span></div>' +
-        '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.color + '"></div></div>' +
         (f.plazasTexto ? '<div class="ranking-plazas">' + f.plazasTexto + '</div>' : '') +
-        (f.total ? '<div class="barra-pista pista-apilada" style="margin-top:6px;">' + segmentos + '</div>' : '') +
+        (f.total ? '<div class="barra-pista pista-apilada" style="margin-top:6px;">' + segmentos + '</div>' : '<div class="barra-valor sin-datos">Sin datos</div>') +
       '</div>';
   }).join("");
 }
