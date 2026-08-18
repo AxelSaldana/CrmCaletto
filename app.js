@@ -620,9 +620,59 @@ function ccRenderMetaMes() {
   cont.innerHTML = metaHtml + cambioHtml + verLink + listaHtml;
 }
 
+/* ----- Ingresos (tarjeta aparte de Meta del mes, con su propio selector de
+   periodo -- Semana/Mes/Año fijos, o "Periodo activo" para seguir el filtro
+   de arriba). Mismo criterio de "cuenta como ingreso" que ya usa el Ranking
+   de vendedores, pero sumado entre todos los vendedores. ----- */
+var CC_INGRESOS_PERIODO = "mes";
+var CC_INGRESOS_ETIQUETAS = { semana: "esta semana", mes: "este mes", anio: "este año", periodo: "en el periodo activo" };
+
+function ccIngresosCambiarPeriodo(clave) {
+  CC_INGRESOS_PERIODO = clave;
+  ccRenderIngresos();
+}
+
+function ccRenderIngresos() {
+  var cont = document.getElementById("ingresosMonto");
+  if (!cont || !DATA) return;
+
+  document.querySelectorAll("#ingresosChips .periodo-chip").forEach(function (btn) {
+    btn.classList.toggle("activo", btn.getAttribute("data-periodo") === CC_INGRESOS_PERIODO);
+  });
+
+  var rango;
+  if (CC_INGRESOS_PERIODO === "periodo") {
+    var claveActiva = CC_PERIODO_ACTIVO;
+    if (claveActiva === "personalizado") {
+      rango = { desde: document.getElementById("fFechaDesde").value, hasta: document.getElementById("fFechaHasta").value };
+    } else {
+      rango = ccRangoPeriodo(claveActiva);
+    }
+  } else {
+    rango = ccRangoPeriodo(CC_INGRESOS_PERIODO);
+  }
+  var sinLimite = !rango.desde && !rango.hasta;
+
+  var items = DATA.clientes.filter(function (d) {
+    if (d.etapa === "cancelado") return false;
+    var fase = ccEtapaInfo(d.etapa).fase;
+    if (fase === "venta") {
+      return sinLimite || ((!rango.desde || d.etapaDesde >= rango.desde) && (!rango.hasta || d.etapaDesde <= rango.hasta));
+    }
+    if (fase !== "firmas") return false;
+    if (sinLimite) return true;
+    return !!d.fechaFondeo && (!rango.desde || d.fechaFondeo >= rango.desde) && (!rango.hasta || d.fechaFondeo <= rango.hasta);
+  });
+  var monto = items.reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0);
+
+  cont.innerHTML = '<div class="meta-cifras"><span class="meta-monto">' + ccMoneda(monto) + '</span><span class="meta-de"> ' +
+    (CC_INGRESOS_ETIQUETAS[CC_INGRESOS_PERIODO] || "") + '</span></div>';
+}
+
 function ccRender() {
   ccActualizarFiltrosBadge();
   ccRenderMetaMes();
+  ccRenderIngresos();
   var datos = ccDatosFiltrados();
   ccRenderBanner(datos);
   ccRenderKpis(datos);
