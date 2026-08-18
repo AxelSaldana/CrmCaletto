@@ -134,6 +134,8 @@ a{color:inherit;}
 .banner.ok{background:var(--verde-suave);color:var(--verde);}
 .banner.warn{background:var(--naranja-suave);color:var(--naranja);}
 .banner.bad{background:var(--coral-suave);color:var(--coral);}
+.banner-clicable{cursor:pointer;}
+.banner-clicable:active{filter:brightness(0.96);}
 
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .kpi{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:14px 16px;

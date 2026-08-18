@@ -622,12 +622,24 @@ function ccRenderBanner(datos) {
   var mensaje = total === 0 ? "Todo bien" : total + " caso(s) necesitan atención";
 
   var banner = document.getElementById("banner");
-  banner.className = "banner " + clase;
+  banner.className = "banner " + clase + (total > 0 ? " banner-clicable" : "");
+  banner.onclick = total > 0 ? ccIrAAtencion : null;
   banner.innerHTML =
     '<span class="banner-msg"><i class="fa ' + icono + '"></i> ' + mensaje + '</span>' +
     '<span class="banner-actualizado" id="banActualizado"></span>';
 
   ccRenderTimestamp();
+}
+
+// El banner combina vencidos de "Atención requerida" + citas/firmas vencidas
+// de "Próximas citas y firmas" -- Atención requerida es la lista principal de
+// "casos que necesitan atención", asi que ahi es a donde manda el click.
+function ccIrAAtencion() {
+  ccCambiarTab("resumen");
+  setTimeout(function () {
+    var el = document.getElementById("cardAlertas");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 60);
 }
 
 function ccRenderTimestamp() {
