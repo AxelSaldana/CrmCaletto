@@ -660,8 +660,10 @@ function ccRenderKpis(datos) {
   var cerrados = datos.filter(ccEsFinalizado);
   var montoCerrado = cerrados.reduce(function (s, d) { return s + d.monto; }, 0);
   var tasa = total ? Math.round((cerrados.length / total) * 100) : 0;
+  // Mismo criterio exacto que "Atención requerida" (fase !== "firmas"), para
+  // que este numero y esa lista siempre coincidan -- ver ccRenderAlertas.
   var vencidos = datos.filter(function (d) {
-    return !ccEsFinalizado(d) && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
+    return ccEtapaInfo(d.etapa).fase !== "firmas" && d.etapa !== "cancelado" && ccDiasDesde(d.ultimoSeguimiento) > sla;
   });
 
   // "En pipeline" es especificamente Preventa -- listo para cuando se
@@ -676,7 +678,7 @@ function ccRenderKpis(datos) {
     '<div class="kpi kpi-clicable" onclick="ccIrAKanban(\'preventa\')"><div class="n">' + totalPreventa + '</div><div class="l">En pipeline</div><div class="s">' + ccMoneda(montoPreventa) + '</div></div>' +
     '<div class="kpi verde kpi-clicable" onclick="ccIrAKanban(\'firmas\',\'finalizado\')"><div class="n">' + cerrados.length + '</div><div class="l">' + infoFinalKpi.nombre + '</div><div class="s">' + ccMoneda(montoCerrado) + '</div></div>' +
     '<div class="kpi naranja"><div class="n">' + tasa + '%</div><div class="l">Conversión</div><div class="s">Global</div></div>' +
-    '<div class="kpi coral"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
+    '<div class="kpi coral kpi-clicable" onclick="ccIrAAtencion()"><div class="n">' + vencidos.length + '</div><div class="l">Sin seguimiento</div><div class="s">+' + sla + ' días</div></div>';
 }
 
 function ccDesglosePorFase(items, excluirFinalizadoDeFirmas) {
