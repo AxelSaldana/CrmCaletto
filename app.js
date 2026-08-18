@@ -922,33 +922,16 @@ function ccRenderRanking(datos) {
   });
   vendedoresVisibles.sort();
 
-  // Rango del periodo activo -- para saber si un cliente que ya esta en
-  // Firmas de verdad fondeo DENTRO de ese periodo, en vez de solo haber
-  // tenido actividad/movimiento reciente (ej. un sync automatico que le
-  // toca la fecha sin que haya entrado dinero de verdad).
-  var claveP = CC_PERIODO_ACTIVO;
-  var esTodo = claveP === "todo";
-  var rangoP = esTodo ? null : (claveP === "personalizado"
-    ? { desde: document.getElementById("fFechaDesde").value, hasta: document.getElementById("fFechaHasta").value }
-    : ccRangoPeriodo(claveP));
-
   var filas = vendedoresVisibles.map(function (v) {
     var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
     // Los ingresos cuentan clientes que YA llegaron a "Liberado" -- ahi es
     // cuando la venta se considera ganada -- sin importar si despues avanzan
     // a Firmas (documentos, fondeo, etc). Cierre de expediente (antes de
-    // Liberado) no cuenta, esa venta todavia no se considera cerrada.
-    // Cuando hay un periodo especifico activo (no "Todo"), un cliente que ya
-    // esta en Firmas solo cuenta si su fechaFondeo cae DENTRO de ese periodo
-    // -- si no, cualquiera con actividad reciente pero sin fondeo (o con
-    // fondeo de otro mes) se veia como ingreso de un periodo en el que en
-    // realidad no entro ni un peso.
-    var monto = items.filter(function (d) {
-      if (d.etapa === "liberado") return true;
-      if (ccEtapaInfo(d.etapa).fase !== "firmas") return false;
-      if (esTodo) return true;
-      return !!d.fechaFondeo && (!rangoP.desde || d.fechaFondeo >= rangoP.desde) && (!rangoP.hasta || d.fechaFondeo <= rangoP.hasta);
-    }).reduce(function (s, d) { return s + d.monto; }, 0);
+    // Liberado) no cuenta, esa venta todavia no se considera cerrada. El
+    // periodo activo ya filtro "items" por etapaDesde (ver ccDatosFiltrados),
+    // asi que aqui no hace falta exigir fechaFondeo dentro del rango.
+    var monto = items.filter(function (d) { return d.etapa === "liberado" || ccEtapaInfo(d.etapa).fase === "firmas"; })
+      .reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(ccEsFinalizado).length;
 
     var porPlaza = {};
