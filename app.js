@@ -622,8 +622,9 @@ function ccRenderMetaMes() {
 
 /* ----- Ingresos (tarjeta aparte de Meta del mes, con su propio selector de
    periodo -- Semana/Mes/Año fijos, o "Periodo activo" para seguir el filtro
-   de arriba). Mismo criterio de "cuenta como ingreso" que ya usa el Ranking
-   de vendedores, pero sumado entre todos los vendedores. ----- */
+   de arriba). Mismo criterio de "ingreso" que ya usa Meta del mes -- ya
+   tiene fecha de fondeo capturada, dentro del rango -- solo que aqui el
+   rango lo elige esta tarjeta, no el filtro de Meta del mes. ----- */
 var CC_INGRESOS_PERIODO = "mes";
 var CC_INGRESOS_ETIQUETAS = { semana: "esta semana", mes: "este mes", anio: "este año", periodo: "en el periodo activo" };
 
@@ -651,16 +652,7 @@ function ccRenderIngresos() {
   } else {
     rango = ccRangoPeriodo(CC_INGRESOS_PERIODO);
   }
-  var sinLimite = !rango.desde && !rango.hasta;
-
   var items = DATA.clientes.filter(function (d) {
-    if (d.etapa === "cancelado") return false;
-    var fase = ccEtapaInfo(d.etapa).fase;
-    if (fase === "venta") {
-      return sinLimite || ((!rango.desde || d.etapaDesde >= rango.desde) && (!rango.hasta || d.etapaDesde <= rango.hasta));
-    }
-    if (fase !== "firmas") return false;
-    if (sinLimite) return true;
     return !!d.fechaFondeo && (!rango.desde || d.fechaFondeo >= rango.desde) && (!rango.hasta || d.fechaFondeo <= rango.hasta);
   });
   var monto = items.reduce(function (s, d) { return s + ccMontoFondeoReal(d); }, 0);
