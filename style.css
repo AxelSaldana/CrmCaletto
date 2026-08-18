@@ -126,6 +126,7 @@ a{color:inherit;}
 .dias-chip.ok{background:var(--verde-suave);color:var(--verde);}
 .dias-chip.warn{background:var(--naranja-suave);color:var(--naranja);}
 .dias-chip.bad{background:var(--coral-suave);color:var(--coral);}
+.dias-chip.neutro{background:#eef1f5;color:var(--tinta-suave);}
 
 .banner{padding:12px 16px;border-radius:12px;font-weight:700;font-size:1em;display:flex;align-items:center;
   justify-content:space-between;gap:10px;flex-wrap:wrap;}

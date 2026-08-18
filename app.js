@@ -108,7 +108,13 @@ function ccRecalcularUltimoSeguimiento() {
     if (!d.seguimientos || !d.seguimientos.length) return;
     var humanos = d.seguimientos.filter(function (s) { return !ccEsSeguimientoAutomatico(s); });
     if (humanos.length) {
-      d.ultimoSeguimiento = humanos.reduce(function (a, b) { return a.fecha > b.fecha ? a : b; }).fecha;
+      var fechaHumana = humanos.reduce(function (a, b) { return a.fecha > b.fecha ? a : b; }).fecha;
+      d.ultimoSeguimiento = fechaHumana;
+      // etapaDesde tambien se recalcula igual -- si no, un evento automatico
+      // (ej. "Gestor de firma registrado") mete al cliente en el periodo
+      // "Este mes" aunque nadie le haya dado seguimiento de verdad en meses,
+      // justo lo contrario de lo que ya evitamos para "dias sin seguimiento".
+      d.etapaDesde = fechaHumana;
     } else {
       // solo hay entradas automaticas -- no cuenta como seguimiento real,
       // se trata como si no hubiera nada desde que entro a esta etapa
@@ -1067,6 +1073,9 @@ function ccChipDias(dias) {
 
 function ccRenderTarjetaKanban(d) {
   var dias = ccDiasDesde(d.ultimoSeguimiento);
+  // Un caso Cancelado/Perdido ya esta cerrado -- no tiene caso marcarlo como
+  // "vencido" solo porque lleva tiempo sin movimiento, eso ya no aplica.
+  var claseDias = d.etapa === "cancelado" ? "neutro" : ccChipDias(dias);
   return '' +
     '<div class="kb-tarjeta" style="--col-color:' + ccEtapaInfo(d.etapa).color + '" onclick="ccAbrirDetalle(' + d.id + ')">' +
       '<div class="kb-t-nombre">' + d.nombre + '</div>' +
@@ -1074,7 +1083,7 @@ function ccRenderTarjetaKanban(d) {
       ccAlertaSlaKanban(d) +
       '<div class="kb-t-pie">' +
         '<span class="kb-t-avatar" style="background:' + ccVendedorColor(d.vendedor) + '" title="' + d.vendedor + '">' + ccIniciales(d.vendedor) + '</span>' +
-        '<span class="dias-chip ' + ccChipDias(dias) + '"><i class="fa fa-clock-o"></i> ' + dias + ' d</span>' +
+        '<span class="dias-chip ' + claseDias + '"><i class="fa fa-clock-o"></i> ' + dias + ' d</span>' +
         '<span class="kb-t-monto">' + ccMoneda(d.monto) + '</span>' +
       '</div>' +
     '</div>';
