@@ -924,11 +924,14 @@ function ccRenderRanking(datos) {
 
   var filas = vendedoresVisibles.map(function (v) {
     var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
-    // Los ingresos solo cuentan clientes en etapa "Liberado" -- ahi es
-    // cuando la venta se considera ganada. Cierre de expediente y las
-    // etapas de Firmas no suman aqui (aunque si siguen contando para
-    // "finalizados" y el desglose por plaza).
-    var monto = items.filter(function (d) { return d.etapa === "liberado"; })
+    // Los ingresos cuentan clientes que YA llegaron a "Liberado" -- ahi es
+    // cuando la venta se considera ganada -- sin importar si despues avanzan
+    // a Firmas (documentos, fondeo, etc). Antes solo se contaba a quien
+    // seguia parado en "Liberado", asi que en cuanto alguien avanzaba a
+    // Firmas su venta "desaparecia" del ingreso aunque ya estuviera ganada.
+    // Cierre de expediente (antes de Liberado) no cuenta, esa venta todavia
+    // no se considera cerrada.
+    var monto = items.filter(function (d) { return d.etapa === "liberado" || ccEtapaInfo(d.etapa).fase === "firmas"; })
       .reduce(function (s, d) { return s + d.monto; }, 0);
     var finalizados = items.filter(ccEsFinalizado).length;
 
