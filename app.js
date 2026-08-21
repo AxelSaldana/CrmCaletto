@@ -739,6 +739,15 @@ function ccRenderEmbudo(datos) {
 
   var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
 
+  // Solo se muestra "% vs fase anterior" donde de verdad hay una relacion
+  // secuencial real: Firmas viene de Venta y Finalizado viene de Firmas,
+  // ambos con datos reales de por medio. Venta NO vs Preventa -- son cosas
+  // distintas (cuantos hay ahorita en el pipeline de Preventa vs el total
+  // historico acumulado en Venta), esa comparacion no significa nada y
+  // puede salir un numero absurdo como "150%". Cancelado tampoco, una
+  // tarjeta se puede cancelar desde cualquier fase, no solo desde Preventa.
+  var mostrarConversion = { preventa: false, venta: false, firmas: true, finalizado: true, cancelado: false };
+
   // A donde manda cada fila del embudo dentro del Kanban -- "Finalizado" y
   // "Cancelado" no son grupos propios ahi, viven anidados (Finalizado
   // dentro de Firmas, Cancelado dentro de Preventa).
@@ -751,7 +760,7 @@ function ccRenderEmbudo(datos) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
     var conv = "";
     var anterior = filas[i - 1];
-    if (anterior && f.fase.clave !== "cancelado") {
+    if (anterior && mostrarConversion[f.fase.clave]) {
       var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
       conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
     }
@@ -766,7 +775,7 @@ function ccRenderEmbudo(datos) {
   }).join("");
 }
 
-var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
+var CC_FIRMAS_ETAPA_FINAL = ["firma", "escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
 
 // "Documentos" y "Avalúo" se muestran unidas como una sola etapa visual,
 // "Firmas en proceso" -- son los dos primeros pasos de Firmas y en la
