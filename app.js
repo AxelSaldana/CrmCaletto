@@ -739,15 +739,6 @@ function ccRenderEmbudo(datos) {
 
   var maxCount = Math.max.apply(null, filas.map(function (f) { return f.count; }).concat([1]));
 
-  // Solo se muestra "% vs fase anterior" donde de verdad hay una relacion
-  // secuencial real: Firmas viene de Venta y Finalizado viene de Firmas,
-  // ambos con datos reales de por medio. Venta NO vs Preventa -- son cosas
-  // distintas (cuantos hay ahorita en el pipeline de Preventa vs el total
-  // historico acumulado en Venta), esa comparacion no significa nada y
-  // puede salir un numero absurdo como "150%". Cancelado tampoco, una
-  // tarjeta se puede cancelar desde cualquier fase, no solo desde Preventa.
-  var mostrarConversion = { preventa: false, venta: false, firmas: true, finalizado: true, cancelado: false };
-
   // A donde manda cada fila del embudo dentro del Kanban -- "Finalizado" y
   // "Cancelado" no son grupos propios ahi, viven anidados (Finalizado
   // dentro de Firmas, Cancelado dentro de Preventa).
@@ -756,19 +747,19 @@ function ccRenderEmbudo(datos) {
     finalizado: ["firmas", "finalizado"], cancelado: ["preventa", "cancelado"]
   };
 
+  // Solo en esta lista (no en el Kanban ni en los filtros) "Firmas" se
+  // muestra como "Proceso de Firmas", para no confundirla con la fila de
+  // "Proyecto Firmado" justo debajo -- son dos cosas distintas: una es lo
+  // que sigue en tramite, la otra ya cerro.
+  var nombresFila = { firmas: "Proceso de Firmas" };
+
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
-    var conv = "";
-    var anterior = filas[i - 1];
-    if (anterior && mostrarConversion[f.fase.clave]) {
-      var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
-      conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
-    }
+    var nombre = nombresFila[f.fase.clave] || f.fase.nombre;
     var destino = destinoKanban[f.fase.clave] || [f.fase.clave];
     var onclick = "ccIrAKanban('" + destino[0] + "'" + (destino[1] ? ",'" + destino[1] + "'" : "") + ")";
-    return conv +
-      '<div class="barra-fila barra-clicable" onclick="' + onclick + '">' +
-        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre + '</span>' +
+    return '<div class="barra-fila barra-clicable" onclick="' + onclick + '">' +
+        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + nombre + '</span>' +
         '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.fase.color + '">' + (f.count || "") + '</div></div>' +
       '</div>';
