@@ -67,18 +67,6 @@ function ccBuscarDebounced() {
   ccBuscarTimeout = setTimeout(ccRender, 200);
 }
 
-// Preventa (Primer contacto, Cita realizada, Negociación) sigue siendo
-// datos de ejemplo hardcodeados en el backend, no conectados a la BD real.
-// Se quitan solo los clientes falsos -- la fase Preventa se queda visible
-// en el embudo/Kanban, nomas que en 0, en vez de desaparecer del todo.
-function ccQuitarDatosDeEjemplo() {
-  if (!DATA) return;
-  DATA.clientes = (DATA.clientes || []).filter(function (d) {
-    var info = DATA.etapas.filter(function (e) { return e.clave === d.etapa; })[0];
-    return !info || info.fase !== "preventa";
-  });
-}
-
 // Cambio nomas de nombre (cosmetico): la etapa "finalizado" se sigue
 // llamando asi internamente (claves, filtros, navegacion), pero en pantalla
 // se muestra como "Proyecto Firmado".
@@ -154,7 +142,6 @@ function ccCargarDatos() {
     })
     .then(function (json) {
       DATA = json;
-      ccQuitarDatosDeEjemplo();
       ccRenombrarFinalizado();
       ccRecalcularUltimoSeguimiento();
       ultimaActualizacion = new Date();
@@ -761,26 +748,26 @@ function ccRenderEmbudo(datos) {
     finalizado: ["firmas", "finalizado"], cancelado: ["preventa", "cancelado"]
   };
 
+  // Solo en esta lista (no en el Kanban ni en los filtros) "Firmas" se
+  // muestra como "Proceso de Firmas", para no confundirla con la fila de
+  // "Proyecto Firmado" justo debajo -- son dos cosas distintas: una es lo
+  // que sigue en tramite, la otra ya cerro.
+  var nombresFila = { firmas: "Proceso de Firmas" };
+
   document.getElementById("embudo").innerHTML = filas.map(function (f, i) {
     var pct = Math.max(Math.round((f.count / maxCount) * 100), f.count ? 6 : 0);
-    var conv = "";
-    var anterior = filas[i - 1];
-    if (anterior && f.fase.clave !== "cancelado") {
-      var pctConv = anterior.count ? Math.round((f.count / anterior.count) * 100) : 0;
-      conv = '<div class="conversion"><i class="fa fa-long-arrow-up"></i> ' + pctConv + '% vs ' + anterior.fase.nombre + '</div>';
-    }
+    var nombre = nombresFila[f.fase.clave] || f.fase.nombre;
     var destino = destinoKanban[f.fase.clave] || [f.fase.clave];
     var onclick = "ccIrAKanban('" + destino[0] + "'" + (destino[1] ? ",'" + destino[1] + "'" : "") + ")";
-    return conv +
-      '<div class="barra-fila barra-clicable" onclick="' + onclick + '">' +
-        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + f.fase.nombre + '</span>' +
+    return '<div class="barra-fila barra-clicable" onclick="' + onclick + '">' +
+        '<div class="barra-cab"><span class="barra-nombre"><i class="fa ' + f.fase.icono + '" style="color:' + f.fase.color + '"></i>' + nombre + '</span>' +
         '<span class="barra-valor">' + f.count + ' · ' + ccMoneda(f.monto) + '</span></div>' +
         '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.fase.color + '">' + (f.count || "") + '</div></div>' +
       '</div>';
   }).join("");
 }
 
-var CC_FIRMAS_ETAPA_FINAL = ["escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
+var CC_FIRMAS_ETAPA_FINAL = ["firma", "escrituras", "expediente_fisico", "visto_bueno", "finalizado"];
 
 // "Documentos" y "Avalúo" se muestran unidas como una sola etapa visual,
 // "Firmas en proceso" -- son los dos primeros pasos de Firmas y en la
