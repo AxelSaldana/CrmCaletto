@@ -1181,6 +1181,13 @@ function ccRenderTiempoEtapas(datos) {
 // plaza no tiene uno activo) -- por eso "San Luis Potosí" ya no sale en 0
 // solo por vender en un fraccionamiento que es prioritario en Ciudad
 // Victoria.
+var ccBonoMetaExpandido = { coordinadores: false, gerentes: false, vendedores: false };
+
+function ccToggleBonoMeta(seccion) {
+  ccBonoMetaExpandido[seccion] = !ccBonoMetaExpandido[seccion];
+  ccRenderBonoMeta();
+}
+
 function ccRenderBonoMeta() {
   var bm = DATA.bonoMeta;
   var card = document.getElementById("cardBonoMeta");
@@ -1221,35 +1228,50 @@ function ccRenderBonoMeta() {
       '</div>';
   }
 
+  // Cada lista puede traer decenas de filas (un Coordinador real llega a
+  // tener 30+ vendedores evaluados) -- volcarlas todas de un jalón disparaba
+  // el alto de la tarjeta y dejaba huecos enormes junto a las vecinas. Se
+  // truncan a 5 con un "Ver todos", igual que ya hace "Atención requerida"
+  // (ccToggleAlertas).
+  var LIMITE_BONOMETA = 5;
+  function ccRenderListaBonoMeta(contenedorId, filasHtml, seccion, vacioTexto) {
+    var cont = document.getElementById(contenedorId);
+    if (!filasHtml.length) {
+      cont.innerHTML = '<div class="barra-valor sin-datos">' + vacioTexto + '</div>';
+      return;
+    }
+    var expandido = ccBonoMetaExpandido[seccion];
+    var mostrar = expandido ? filasHtml : filasHtml.slice(0, LIMITE_BONOMETA);
+    var pie = filasHtml.length > LIMITE_BONOMETA
+      ? '<div class="ver-mas" onclick="ccToggleBonoMeta(\'' + seccion + '\')">' +
+        (expandido ? "Ver menos" : "Ver todos (" + filasHtml.length + ")") + '</div>'
+      : "";
+    cont.innerHTML = mostrar.join("") + pie;
+  }
+
   var coordinadores = (bm.coordinadores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
   var coordCumplieron = coordinadores.filter(function (c) { return c.pct_promedio >= 1; }).length;
-  document.getElementById("bonoMetaCoordinadores").innerHTML = coordinadores.length
-    ? coordinadores.map(function (c) {
-      return filaBono(c.coordinador, c.vendedores_evaluados + " vendedores evaluados",
-        ccMoneda(c.bono) + " · " + Math.round(c.pct_promedio * 100) + "%", c.pct_promedio, c.pct_promedio >= 1);
-    }).join("")
-    : '<div class="barra-valor sin-datos">Sin coordinadores con equipo asignado</div>';
+  ccRenderListaBonoMeta("bonoMetaCoordinadores", coordinadores.map(function (c) {
+    return filaBono(c.coordinador, c.vendedores_evaluados + " vendedores evaluados",
+      ccMoneda(c.bono) + " · " + Math.round(c.pct_promedio * 100) + "%", c.pct_promedio, c.pct_promedio >= 1);
+  }), "coordinadores", "Sin coordinadores con equipo asignado");
 
   // "X casas prioritarias" en vez de nombrar un fraccionamiento fijo -- el
   // equipo de un Gerente puede vender en más de una plaza, cada una con su
   // propio prioritario, así que ya no hay un solo nombre que ponerle aquí.
   var gerentes = (bm.gerentes || []).slice().sort(function (a, b) { return b.bono - a.bono; });
   var gerCumplieron = gerentes.filter(function (g) { return g.bono > 0; }).length;
-  document.getElementById("bonoMetaGerentes").innerHTML = gerentes.length
-    ? gerentes.map(function (g) {
-      var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas prioritarias del equipo";
-      return filaBono(g.gerente, sub, ccMoneda(g.bono), null, g.bono > 0);
-    }).join("")
-    : '<div class="barra-valor sin-datos">Sin gerentes capturados</div>';
+  ccRenderListaBonoMeta("bonoMetaGerentes", gerentes.map(function (g) {
+    var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas prioritarias del equipo";
+    return filaBono(g.gerente, sub, ccMoneda(g.bono), null, g.bono > 0);
+  }), "gerentes", "Sin gerentes capturados");
 
   var vendedores = (bm.vendedores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
   var venCumplieron = vendedores.filter(function (v) { return v.pct_meta >= 1; }).length;
-  document.getElementById("bonoMetaVendedores").innerHTML = vendedores.length
-    ? vendedores.map(function (v) {
-      var sub = (v.gerente || "") + " · " + v.casas_prioridad + " de prioridad + " + v.casas_otras + " de otros";
-      return filaBono(v.vendedor, sub, ccMoneda(v.bono) + " · " + Math.round(v.pct_meta * 100) + "%", v.pct_meta, v.pct_meta >= 1);
-    }).join("")
-    : '<div class="barra-valor sin-datos">Sin vendedores externos capturados</div>';
+  ccRenderListaBonoMeta("bonoMetaVendedores", vendedores.map(function (v) {
+    var sub = (v.gerente || "") + " · " + v.casas_prioridad + " de prioridad + " + v.casas_otras + " de otros";
+    return filaBono(v.vendedor, sub, ccMoneda(v.bono) + " · " + Math.round(v.pct_meta * 100) + "%", v.pct_meta, v.pct_meta >= 1);
+  }), "vendedores", "Sin vendedores externos capturados");
 
   document.getElementById("bonoMetaResumen").innerHTML =
     '<div class="bonometa-resumen-grid">' +

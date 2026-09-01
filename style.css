@@ -174,6 +174,12 @@ a{color:inherit;}
 .bonometa-plaza-nombre{font-weight:800;color:var(--tinta-fuerte);}
 .bonometa-plaza-detalle{color:var(--tinta-suave);}
 
+/* Coordinadores/Gerentes/Vendedores de "Meta por fraccionamiento" -- en
+   escritorio (tarjeta ancha, ver .ancha) van lado a lado en vez de una
+   debajo de otra, para que la tarjeta no se dispare de alto y deje huecos
+   enormes junto a las tarjetas vecinas. En celular siguen apiladas. */
+.bonometa-columna:not(:first-child) .seguimientos-titulo{margin-top:14px;}
+
 .insignia-cumplio{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.02em;}
 .insignia-cumplio.ok{background:var(--verde-suave);color:var(--verde);}
 .insignia-cumplio.pendiente{background:#f0f2f5;color:var(--tinta-suave);}
@@ -270,6 +276,7 @@ a{color:inherit;}
   .ancha{grid-column:1 / -1;}
   .kb-columnas{padding-bottom:12px;}
   .kb-columna{max-width:280px;}
+  .bonometa-columnas{display:grid;grid-template-columns:repeat(3,1fr);gap:0 16px;align-items:start;}
 }
 
 @media (min-width:1400px){
