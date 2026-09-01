@@ -195,6 +195,20 @@ function ccMoneda(n) {
   return "$" + Number(n).toLocaleString("es-MX");
 }
 
+// "YYYY-MM-DD" -> "15 sep 2026" -- parseo de texto, no Date(), para no
+// arrastrar el corrimiento de zona horaria que "new Date('YYYY-MM-DD')"
+// mete al tratar la fecha como UTC medianoche.
+var CC_MESES_ABREV = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function ccFechaEs(fechaIso) {
+  if (!fechaIso) return "";
+  var partes = String(fechaIso).substring(0, 10).split("-");
+  if (partes.length < 3) return fechaIso;
+  var dia = parseInt(partes[2], 10);
+  var mes = CC_MESES_ABREV[parseInt(partes[1], 10) - 1];
+  if (!dia || !mes) return fechaIso;
+  return dia + " " + mes + " " + partes[0];
+}
+
 function ccEtapaInfo(clave) {
   for (var i = 0; i < DATA.etapas.length; i++) if (DATA.etapas[i].clave === clave) return DATA.etapas[i];
   return DATA.etapas[0];
@@ -902,7 +916,7 @@ function ccRenderProximas(datos) {
     return '' +
       '<div class="item clicable" onclick="ccAbrirDetalle(' + x.d.id + ')">' +
         '<div><div class="item-nombre"><i class="fa ' + x.icono + '"></i> ' + x.d.nombre + '</div>' +
-        '<div class="item-sub">' + x.tipo + ' · ' + x.fecha + '</div></div>' +
+        '<div class="item-sub">' + x.tipo + ' · ' + ccFechaEs(x.fecha) + '</div></div>' +
         '<span class="item-chip ' + clase + '">' + etiqueta + '</span>' +
       '</div>';
   }).join("");
@@ -1089,7 +1103,7 @@ function ccRenderBonoMeta() {
   card.style.display = "";
 
   document.getElementById("bonoMetaCicloSub").textContent =
-    (bm.fraccionamientoPrioridad || "") + " · " + bm.ciclo.fecha_inicio + " a " + bm.ciclo.fecha_fin;
+    (bm.fraccionamientoPrioridad || "") + " · " + ccFechaEs(bm.ciclo.fecha_inicio) + " a " + ccFechaEs(bm.ciclo.fecha_fin);
 
   function filaBono(nombre, sub, valorTexto, pct) {
     var barra = (pct == null) ? "" :
@@ -1302,7 +1316,7 @@ function ccAbrirDetalle(id) {
     hist.innerHTML = ordenados.map(function (s) {
       var canal = ccCanalInfo(s.canal);
       var img = s.imagen ? '<img class="seg-img" src="' + s.imagen + '" alt="Adjunto" onclick="this.classList.toggle(\'seg-img-grande\')">' : '';
-      return '<div class="seguimiento-item"><div class="f"><span class="canal-badge"><i class="fa ' + canal.icono + '"></i> ' + s.canal + '</span>' + s.fecha + ' · ' + s.autor + '</div>' +
+      return '<div class="seguimiento-item"><div class="f"><span class="canal-badge"><i class="fa ' + canal.icono + '"></i> ' + s.canal + '</span>' + ccFechaEs(s.fecha) + ' · ' + s.autor + '</div>' +
         '<div class="t">' + s.texto + '</div>' + img + '</div>';
     }).join("");
   }
