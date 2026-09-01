@@ -1186,41 +1186,58 @@ function ccRenderBonoMeta() {
   document.getElementById("bonoMetaCicloSub").textContent =
     (bm.fraccionamientoPrioridad || "") + " · " + ccFechaEs(bm.ciclo.fecha_inicio) + " a " + ccFechaEs(bm.ciclo.fecha_fin);
 
-  function filaBono(nombre, sub, valorTexto, pct) {
+  function insigniaCumplio(cumplio) {
+    return cumplio
+      ? '<span class="insignia-cumplio ok"><i class="fa fa-check-circle"></i> Cumplió</span>'
+      : '<span class="insignia-cumplio pendiente">En progreso</span>';
+  }
+
+  function filaBono(nombre, sub, valorTexto, pct, cumplio) {
     var barra = (pct == null) ? "" :
       '<div class="barra-pista" style="margin-top:6px;"><div class="barra-fill" style="width:' +
-      Math.max(Math.min(Math.round(pct * 100), 100), 4) + '%;background:var(--azul)"></div></div>';
+      Math.max(Math.min(Math.round(pct * 100), 100), 4) + '%;background:' + (cumplio ? 'var(--verde)' : 'var(--azul)') + '"></div></div>';
     return '<div class="barra-fila">' +
       '<div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
       '<span class="barra-valor">' + valorTexto + '</span></div>' +
       (sub ? '<div class="ranking-plazas">' + sub + '</div>' : '') +
+      '<div style="margin-top:5px;">' + insigniaCumplio(cumplio) + '</div>' +
       barra +
       '</div>';
   }
 
   var coordinadores = (bm.coordinadores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  var coordCumplieron = coordinadores.filter(function (c) { return c.pct_promedio >= 1; }).length;
   document.getElementById("bonoMetaCoordinadores").innerHTML = coordinadores.length
     ? coordinadores.map(function (c) {
       return filaBono(c.coordinador, c.vendedores_evaluados + " vendedores evaluados",
-        ccMoneda(c.bono) + " · " + Math.round(c.pct_promedio * 100) + "%", c.pct_promedio);
+        ccMoneda(c.bono) + " · " + Math.round(c.pct_promedio * 100) + "%", c.pct_promedio, c.pct_promedio >= 1);
     }).join("")
     : '<div class="barra-valor sin-datos">Sin coordinadores con equipo asignado</div>';
 
   var gerentes = (bm.gerentes || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  var gerCumplieron = gerentes.filter(function (g) { return g.bono > 0; }).length;
   document.getElementById("bonoMetaGerentes").innerHTML = gerentes.length
     ? gerentes.map(function (g) {
       var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas de " + (bm.fraccionamientoPrioridad || "prioridad");
-      return filaBono(g.gerente, sub, ccMoneda(g.bono), null);
+      return filaBono(g.gerente, sub, ccMoneda(g.bono), null, g.bono > 0);
     }).join("")
     : '<div class="barra-valor sin-datos">Sin gerentes capturados</div>';
 
   var vendedores = (bm.vendedores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  var venCumplieron = vendedores.filter(function (v) { return v.pct_meta >= 1; }).length;
   document.getElementById("bonoMetaVendedores").innerHTML = vendedores.length
     ? vendedores.map(function (v) {
       var sub = (v.gerente || "") + " · " + v.casas_prioridad + " de prioridad + " + v.casas_otras + " de otros";
-      return filaBono(v.vendedor, sub, ccMoneda(v.bono) + " · " + Math.round(v.pct_meta * 100) + "%", v.pct_meta);
+      return filaBono(v.vendedor, sub, ccMoneda(v.bono) + " · " + Math.round(v.pct_meta * 100) + "%", v.pct_meta, v.pct_meta >= 1);
     }).join("")
     : '<div class="barra-valor sin-datos">Sin vendedores externos capturados</div>';
+
+  document.getElementById("bonoMetaResumen").innerHTML =
+    '<div class="bonometa-resumen-grid">' +
+      '<div class="bonometa-resumen-item"><div class="n">' + coordCumplieron + '/' + coordinadores.length + '</div><div class="l">Coordinadores al 100%</div></div>' +
+      '<div class="bonometa-resumen-item"><div class="n">' + gerCumplieron + '/' + gerentes.length + '</div><div class="l">Gerentes con bono</div></div>' +
+      '<div class="bonometa-resumen-item"><div class="n">' + venCumplieron + '/' + vendedores.length + '</div><div class="l">Vendedores en meta</div></div>' +
+    '</div>';
 }
 
 function ccAlertaSlaKanban(d) {
