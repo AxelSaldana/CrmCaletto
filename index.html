@@ -35,6 +35,7 @@
     <div class="guia-item"><i class="fa fa-bell"></i><div><strong>Atención requerida</strong> son los clientes que llevan mucho tiempo sin seguimiento — los que están cerca de concretarse (Prospecto, Cita, Cliente) aparecen primero.</div></div>
     <div class="guia-item"><i class="fa fa-calendar"></i><div><strong>Próximas citas y firmas</strong> muestra las fechas ya agendadas, ordenadas por cuál es más urgente.</div></div>
     <div class="guia-item"><i class="fa fa-trophy"></i><div><strong>Ranking de vendedores</strong> compara a todo el equipo por monto vendido, con el desglose de cuántos tiene cada uno por plaza.</div></div>
+    <div class="guia-item"><i class="fa fa-home"></i><div><strong>Meta por fraccionamiento</strong> es la campaña de metas por cantidad de casas (Coordinador, Gerente y vendedores externos), con su bono ya calculado -- solo aparece si hay un ciclo activo configurado.</div></div>
   </div>
   <div class="estado-form">
     <button type="button" class="btn btn-primario" onclick="ccCerrarBienvenida()">Entendido, vamos</button>
@@ -154,6 +155,17 @@
       <div class="card">
         <div class="card-titulo">Ranking de vendedores</div>
         <div id="ranking"></div>
+      </div>
+
+      <div class="card" id="cardBonoMeta" style="display:none;">
+        <div class="card-titulo">Meta por fraccionamiento <span id="bonoMetaCicloSub" class="card-nota"></span></div>
+        <div id="bonoMetaResumen"></div>
+        <div class="seguimientos-titulo" style="margin-top:14px;">Coordinadores</div>
+        <div id="bonoMetaCoordinadores"></div>
+        <div class="seguimientos-titulo" style="margin-top:14px;">Gerentes</div>
+        <div id="bonoMetaGerentes"></div>
+        <div class="seguimientos-titulo" style="margin-top:14px;">Vendedores externos</div>
+        <div id="bonoMetaVendedores"></div>
       </div>
 
       <div class="card">

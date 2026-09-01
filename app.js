@@ -628,6 +628,7 @@ function ccRender() {
   ccRenderFraccionamiento(datos);
   ccRenderMotivos(datos);
   ccRenderTiempoEtapas(datos);
+  ccRenderBonoMeta();
   // El Kanban puede tener cientos de tarjetas con datos reales; si no se
   // esta viendo (pestaña Resumen activa), no vale la pena reconstruir todo
   // ese HTML en cada tecla de busqueda o cambio de filtro. Se repinta solo
@@ -1082,6 +1083,62 @@ function ccRenderTiempoEtapas(datos) {
       '<span class="barra-valor">' + f.promedio + ' d prom. · ' + f.count + '</span></div>' +
       '<div class="barra-pista"><div class="barra-fill" style="width:' + pct + '%;background:' + f.etapa.color + '">' + f.promedio + 'd</div></div></div>';
   }).join("");
+}
+
+// "Meta por fraccionamiento": mismo reporte de Bono Meta que ve Sistemas/
+// Dirección en el CRM interno (Administración de Ventas → "Bono Meta") --
+// esta app YA es de Dirección, por eso aquí sí se muestra el monto en pesos
+// (a diferencia del panel del Gerente/Coordinador en el CRM interno, donde
+// se oculta a propósito). No depende de los filtros de fecha/plaza/vendedor
+// de "Resumen" -- es su propio ciclo, ya resuelto por el backend.
+function ccRenderBonoMeta() {
+  var bm = DATA.bonoMeta;
+  var card = document.getElementById("cardBonoMeta");
+
+  if (!bm || !bm.ciclo) {
+    card.style.display = "none";
+    return;
+  }
+  card.style.display = "";
+
+  document.getElementById("bonoMetaCicloSub").textContent =
+    (bm.fraccionamientoPrioridad || "") + " · " + bm.ciclo.fecha_inicio + " a " + bm.ciclo.fecha_fin;
+
+  function filaBono(nombre, sub, valorTexto, pct) {
+    var barra = (pct == null) ? "" :
+      '<div class="barra-pista" style="margin-top:6px;"><div class="barra-fill" style="width:' +
+      Math.max(Math.min(Math.round(pct * 100), 100), 4) + '%;background:var(--azul)"></div></div>';
+    return '<div class="barra-fila">' +
+      '<div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
+      '<span class="barra-valor">' + valorTexto + '</span></div>' +
+      (sub ? '<div class="ranking-plazas">' + sub + '</div>' : '') +
+      barra +
+      '</div>';
+  }
+
+  var coordinadores = (bm.coordinadores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  document.getElementById("bonoMetaCoordinadores").innerHTML = coordinadores.length
+    ? coordinadores.map(function (c) {
+      return filaBono(c.coordinador, c.vendedores_evaluados + " vendedores evaluados",
+        ccMoneda(c.bono) + " · " + Math.round(c.pct_promedio * 100) + "%", c.pct_promedio);
+    }).join("")
+    : '<div class="barra-valor sin-datos">Sin coordinadores con equipo asignado</div>';
+
+  var gerentes = (bm.gerentes || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  document.getElementById("bonoMetaGerentes").innerHTML = gerentes.length
+    ? gerentes.map(function (g) {
+      var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas de " + (bm.fraccionamientoPrioridad || "prioridad");
+      return filaBono(g.gerente, sub, ccMoneda(g.bono), null);
+    }).join("")
+    : '<div class="barra-valor sin-datos">Sin gerentes capturados</div>';
+
+  var vendedores = (bm.vendedores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  document.getElementById("bonoMetaVendedores").innerHTML = vendedores.length
+    ? vendedores.map(function (v) {
+      var sub = (v.gerente || "") + " · " + v.casas_prioridad + " de prioridad + " + v.casas_otras + " de otros";
+      return filaBono(v.vendedor, sub, ccMoneda(v.bono) + " · " + Math.round(v.pct_meta * 100) + "%", v.pct_meta);
+    }).join("")
+    : '<div class="barra-valor sin-datos">Sin vendedores externos capturados</div>';
 }
 
 function ccAlertaSlaKanban(d) {
