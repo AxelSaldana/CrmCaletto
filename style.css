@@ -166,6 +166,14 @@ a{color:inherit;}
 .bonometa-resumen-item .n{font-size:1.25em;font-weight:800;color:var(--tinta-fuerte);line-height:1.1;}
 .bonometa-resumen-item .l{font-size:.68em;color:var(--tinta-suave);text-transform:uppercase;letter-spacing:.02em;margin-top:3px;font-weight:700;}
 
+/* Una fila por plaza con ciclo activo (Meta por fraccionamiento) -- antes
+   era un solo texto pegado al título de la tarjeta, se desbordaba en
+   pantallas angostas en cuanto había más de una plaza activa. */
+.bonometa-plazas{display:flex;flex-direction:column;gap:4px;margin:-4px 0 12px;}
+.bonometa-plaza-fila{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;font-size:.8em;}
+.bonometa-plaza-nombre{font-weight:800;color:var(--tinta-fuerte);}
+.bonometa-plaza-detalle{color:var(--tinta-suave);}
+
 .insignia-cumplio{display:inline-flex;align-items:center;gap:4px;font-size:.72em;font-weight:800;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.02em;}
 .insignia-cumplio.ok{background:var(--verde-suave);color:var(--verde);}
 .insignia-cumplio.pendiente{background:#f0f2f5;color:var(--tinta-suave);}

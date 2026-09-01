@@ -1193,10 +1193,14 @@ function ccRenderBonoMeta() {
   }
   card.style.display = "";
 
-  document.getElementById("bonoMetaCicloSub").textContent = plazasConCiclo.map(function (p) {
-    return p.plaza + ": " + (p.fraccionamiento_prioridad || "sin fraccionamiento") + " · " +
-      ccFechaEs(p.ciclo.fecha_inicio) + " a " + ccFechaEs(p.ciclo.fecha_fin);
-  }).join("  ·  ");
+  // Una fila por plaza (no un solo texto largo pegado al título) -- con una
+  // sola plaza activa se ve igual que antes; con varias, cada una queda en
+  // su propia línea en vez de amontonarse y desbordar en pantallas angostas.
+  document.getElementById("bonoMetaPlazas").innerHTML = plazasConCiclo.map(function (p) {
+    return '<div class="bonometa-plaza-fila"><span class="bonometa-plaza-nombre">' + p.plaza + '</span>' +
+      '<span class="bonometa-plaza-detalle">' + (p.fraccionamiento_prioridad || "sin fraccionamiento") + ' · ' +
+      ccFechaEs(p.ciclo.fecha_inicio) + ' a ' + ccFechaEs(p.ciclo.fecha_fin) + '</span></div>';
+  }).join("");
 
   function insigniaCumplio(cumplio) {
     return cumplio
