@@ -636,6 +636,7 @@ function ccRender() {
   ccRenderFirmasDetalle(datos);
   ccRenderAlertas(datos);
   ccRenderProximas(datos);
+  ccRenderEquipo(datos);
   ccRenderRanking(datos);
   ccRenderPlaza(datos);
   ccRenderFraccionamiento(datos);
@@ -931,6 +932,74 @@ function ccRenderProximas(datos) {
         '<div class="item-sub">' + x.tipo + ' · ' + ccFechaEs(x.fecha) + '</div></div>' +
         '<span class="item-chip ' + clase + '">' + etiqueta + '</span>' +
       '</div>';
+  }).join("");
+}
+
+// "Equipo de gerentes": mismo concepto que la tarjeta homónima del Panel
+// del Gerente de Ventas interno -- agrupa a cada Gerente ("vendedor" aquí)
+// bajo su Coordinador, con sus mismos números de monto/finalizados que ya
+// calcula "Ranking de vendedores", solo que organizados en jerarquía en vez
+// de una sola lista plana.
+function ccRenderEquipo(datos) {
+  var datosActivos = datos.filter(function (d) { return d.etapa !== "cancelado"; });
+
+  var vendedoresVisibles = [];
+  var vistosVendedor = {};
+  var coordinadorPorVendedor = {};
+  datosActivos.forEach(function (d) {
+    var v = (d.vendedor || "").trim();
+    if (v && !vistosVendedor[v]) { vistosVendedor[v] = true; vendedoresVisibles.push(v); }
+    if (v && !coordinadorPorVendedor[v] && d.coordinador) { coordinadorPorVendedor[v] = d.coordinador; }
+  });
+
+  var claveP = CC_PERIODO_ACTIVO;
+  var esTodo = claveP === "todo";
+  var rangoP = esTodo ? null : (claveP === "personalizado"
+    ? { desde: document.getElementById("fFechaDesde").value, hasta: document.getElementById("fFechaHasta").value }
+    : ccRangoPeriodo(claveP));
+
+  var porCoordinador = {};
+  vendedoresVisibles.forEach(function (v) {
+    var items = datosActivos.filter(function (d) { return (d.vendedor || "").trim() === v; });
+    var monto = items.filter(function (d) {
+      var fase = ccEtapaInfo(d.etapa).fase;
+      if (fase === "venta") return true;
+      if (fase !== "firmas") return false;
+      if (esTodo) return true;
+      return !!d.fechaFondeo && (!rangoP.desde || d.fechaFondeo >= rangoP.desde) && (!rangoP.hasta || d.fechaFondeo <= rangoP.hasta);
+    }).reduce(function (s, d) { return s + d.monto; }, 0);
+    var finalizados = items.filter(ccEsFinalizado).length;
+
+    var coord = coordinadorPorVendedor[v] || "Sin Coordinador asignado";
+    if (!porCoordinador[coord]) { porCoordinador[coord] = { gerentes: [], monto: 0, total: 0 }; }
+    porCoordinador[coord].gerentes.push({ vendedor: v, monto: monto, finalizados: finalizados, total: items.length });
+    porCoordinador[coord].monto += monto;
+    porCoordinador[coord].total += items.length;
+  });
+
+  var coordinadores = Object.keys(porCoordinador).sort(function (a, b) { return porCoordinador[b].monto - porCoordinador[a].monto; });
+
+  var cont = document.getElementById("equipo");
+  if (!coordinadores.length) {
+    cont.innerHTML = '<div class="vacio">Sin datos</div>';
+    return;
+  }
+
+  cont.innerHTML = coordinadores.map(function (c) {
+    var grupo = porCoordinador[c];
+    grupo.gerentes.sort(function (a, b) { return b.monto - a.monto; });
+    var filasGerentes = grupo.gerentes.map(function (g) {
+      return '<div class="barra-fila barra-clicable equipo-gerente" onclick="event.stopPropagation(); ccIrAKanbanFiltro(\'vendedor\',\'' + g.vendedor.replace(/'/g, "\\'") + '\')">' +
+        '<div class="barra-cab"><span class="barra-nombre">' + g.vendedor + '</span>' +
+        '<span class="barra-valor">' + ccMoneda(g.monto) + ' · ' + g.finalizados + ' fin.</span></div>' +
+        '</div>';
+    }).join("");
+    return '' +
+      '<div class="barra-fila barra-clicable" onclick="ccIrAKanbanFiltro(\'coordinador\',\'' + c.replace(/'/g, "\\'") + '\')">' +
+        '<div class="barra-cab"><span class="barra-nombre"><i class="fa fa-sitemap"></i> ' + c + '</span>' +
+        '<span class="barra-valor">' + ccMoneda(grupo.monto) + ' · ' + grupo.gerentes.length + ' gerente(s)</span></div>' +
+      '</div>' +
+      filasGerentes;
   }).join("");
 }
 
@@ -1285,6 +1354,8 @@ function ccIrAKanbanFiltro(campo, valor) {
     ccFiltrarVendedorPorPlazaFracc();
   } else if (campo === "vendedor") {
     document.getElementById("fVendedor").value = valor;
+  } else if (campo === "coordinador") {
+    document.getElementById("fCoordinador").value = valor;
   }
   ccRender();
   ccCambiarTab("kanban");
