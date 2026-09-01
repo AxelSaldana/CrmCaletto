@@ -1173,18 +1173,30 @@ function ccRenderTiempoEtapas(datos) {
 // (a diferencia del panel del Gerente/Coordinador en el CRM interno, donde
 // se oculta a propósito). No depende de los filtros de fecha/plaza/vendedor
 // de "Resumen" -- es su propio ciclo, ya resuelto por el backend.
+//
+// Extendido 2026-09-01: antes había UNA sola campaña/ciclo para toda la
+// empresa (bm.ciclo, bm.fraccionamientoPrioridad). Ahora cada plaza tiene su
+// propio fraccionamiento prioritario y su propio ciclo (bm.plazas -- un
+// {plaza, fraccionamiento_prioridad, ciclo} por plaza, ciclo=null si esa
+// plaza no tiene uno activo) -- por eso "San Luis Potosí" ya no sale en 0
+// solo por vender en un fraccionamiento que es prioritario en Ciudad
+// Victoria.
 function ccRenderBonoMeta() {
   var bm = DATA.bonoMeta;
   var card = document.getElementById("cardBonoMeta");
 
-  if (!bm || !bm.ciclo) {
+  var plazasConCiclo = (bm && bm.plazas ? bm.plazas : []).filter(function (p) { return !!p.ciclo; });
+
+  if (!bm || !plazasConCiclo.length) {
     card.style.display = "none";
     return;
   }
   card.style.display = "";
 
-  document.getElementById("bonoMetaCicloSub").textContent =
-    (bm.fraccionamientoPrioridad || "") + " · " + ccFechaEs(bm.ciclo.fecha_inicio) + " a " + ccFechaEs(bm.ciclo.fecha_fin);
+  document.getElementById("bonoMetaCicloSub").textContent = plazasConCiclo.map(function (p) {
+    return p.plaza + ": " + (p.fraccionamiento_prioridad || "sin fraccionamiento") + " · " +
+      ccFechaEs(p.ciclo.fecha_inicio) + " a " + ccFechaEs(p.ciclo.fecha_fin);
+  }).join("  ·  ");
 
   function insigniaCumplio(cumplio) {
     return cumplio
@@ -1214,11 +1226,14 @@ function ccRenderBonoMeta() {
     }).join("")
     : '<div class="barra-valor sin-datos">Sin coordinadores con equipo asignado</div>';
 
+  // "X casas prioritarias" en vez de nombrar un fraccionamiento fijo -- el
+  // equipo de un Gerente puede vender en más de una plaza, cada una con su
+  // propio prioritario, así que ya no hay un solo nombre que ponerle aquí.
   var gerentes = (bm.gerentes || []).slice().sort(function (a, b) { return b.bono - a.bono; });
   var gerCumplieron = gerentes.filter(function (g) { return g.bono > 0; }).length;
   document.getElementById("bonoMetaGerentes").innerHTML = gerentes.length
     ? gerentes.map(function (g) {
-      var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas de " + (bm.fraccionamientoPrioridad || "prioridad");
+      var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas prioritarias del equipo";
       return filaBono(g.gerente, sub, ccMoneda(g.bono), null, g.bono > 0);
     }).join("")
     : '<div class="barra-valor sin-datos">Sin gerentes capturados</div>';
