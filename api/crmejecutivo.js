@@ -23,7 +23,7 @@ function fechaEn(dias) {
 }
 
 var fases = [
-  { clave: "preventa", nombre: "Preventa", color: "#2a78d6", icono: "fa-bullseye" },
+  { clave: "preventa", nombre: "Leads", color: "#2a78d6", icono: "fa-bullseye" },
   { clave: "venta", nombre: "Venta", color: "#00a65a", icono: "fa-briefcase" },
   { clave: "firmas", nombre: "Firmas", color: "#4a3aa7", icono: "fa-gavel" },
   { clave: "cancelado", nombre: "Cancelado / Perdido", color: "#dd4b39", icono: "fa-times-circle" },
