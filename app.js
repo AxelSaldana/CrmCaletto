@@ -312,6 +312,15 @@ function ccPoblarFiltros() {
     });
   }
 
+  var selCoordinador = document.getElementById("fCoordinador");
+  if (selCoordinador.options.length <= 1) {
+    ccValoresUnicos(function (d) { return d.coordinador; }).forEach(function (c) {
+      var op = document.createElement("option");
+      op.value = c; op.textContent = c;
+      selCoordinador.appendChild(op);
+    });
+  }
+
   ccFiltrarFraccPorPlaza();
   ccFiltrarVendedorPorPlazaFracc();
 }
@@ -433,10 +442,12 @@ function ccDatosFiltrados() {
   var plaza = document.getElementById("fPlaza").value;
   var fraccionamiento = document.getElementById("fFracc").value;
   var vendedor = document.getElementById("fVendedor").value;
+  var coordinador = document.getElementById("fCoordinador").value;
   var fechaDesde = document.getElementById("fFechaDesde").value;
   var fechaHasta = document.getElementById("fFechaHasta").value;
   return DATA.clientes.filter(function (d) {
     if (vendedor && (d.vendedor || "").trim() !== vendedor) return false;
+    if (coordinador && (d.coordinador || "").trim() !== coordinador) return false;
     if (fraccionamiento && (d.fraccionamiento || "").trim() !== fraccionamiento) return false;
     if (plaza && ccPlazaDe(d.fraccionamiento) !== plaza) return false;
     if (fechaDesde && (d.etapaDesde || "") < fechaDesde) return false;
@@ -468,6 +479,7 @@ function ccActualizarFiltrosBadge() {
   if (document.getElementById("fPlaza").value) activos++;
   if (document.getElementById("fFracc").value) activos++;
   if (document.getElementById("fVendedor").value) activos++;
+  if (document.getElementById("fCoordinador").value) activos++;
 
   var badge = document.getElementById("filtrosBadge");
   badge.textContent = activos;
@@ -1291,7 +1303,9 @@ function ccAbrirDetalle(id) {
     '<div><div class="dl">Monto estimado</div><div class="dv">' + ccMoneda(d.monto) + '</div></div>' +
     '<div><div class="dl">Lote</div><div class="dv">' + d.lote + '</div></div>' +
     '<div><div class="dl">Fraccionamiento</div><div class="dv">' + d.fraccionamiento + '</div></div>' +
-    '<div><div class="dl">Plaza</div><div class="dv">' + ccPlazaDe(d.fraccionamiento) + '</div></div>';
+    '<div><div class="dl">Plaza</div><div class="dv">' + ccPlazaDe(d.fraccionamiento) + '</div></div>' +
+    (d.coordinador ? '<div><div class="dl">Coordinador</div><div class="dv">' + d.coordinador + '</div></div>' : '') +
+    (d.vendedorExterno ? '<div><div class="dl">Vendedor externo</div><div class="dv">' + d.vendedorExterno + '</div></div>' : '');
 
   var info = ccEtapaInfo(d.etapa);
   var badgeEl = document.getElementById("detEtapaBadge");
