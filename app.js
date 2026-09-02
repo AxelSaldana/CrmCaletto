@@ -1181,7 +1181,7 @@ function ccRenderTiempoEtapas(datos) {
 // plaza no tiene uno activo) -- por eso "San Luis Potosí" ya no sale en 0
 // solo por vender en un fraccionamiento que es prioritario en Ciudad
 // Victoria.
-var ccBonoMetaExpandido = { coordinadores: false, gerentes: false, vendedores: false };
+var ccBonoMetaExpandido = { coordinadores: false, gerentes: false };
 
 function ccToggleBonoMeta(seccion) {
   ccBonoMetaExpandido[seccion] = !ccBonoMetaExpandido[seccion];
@@ -1209,31 +1209,21 @@ function ccRenderBonoMeta() {
       ccFechaEs(p.ciclo.fecha_inicio) + ' a ' + ccFechaEs(p.ciclo.fecha_fin) + '</span></div>';
   }).join("");
 
-  function insigniaCumplio(cumplio) {
-    return cumplio
-      ? '<span class="insignia-cumplio ok"><i class="fa fa-check-circle"></i> Cumplió</span>'
-      : '<span class="insignia-cumplio pendiente">En progreso</span>';
-  }
-
-  function filaBono(nombre, sub, valorTexto, pct, cumplio) {
-    var barra = (pct == null) ? "" :
-      '<div class="barra-pista" style="margin-top:6px;"><div class="barra-fill" style="width:' +
-      Math.max(Math.min(Math.round(pct * 100), 100), 4) + '%;background:' + (cumplio ? 'var(--verde)' : 'var(--azul)') + '"></div></div>';
-    return '<div class="barra-fila">' +
-      '<div class="barra-cab"><span class="barra-nombre">' + nombre + '</span>' +
-      '<span class="barra-valor">' + valorTexto + '</span></div>' +
-      (sub ? '<div class="ranking-plazas">' + sub + '</div>' : '') +
-      '<div style="margin-top:5px;">' + insigniaCumplio(cumplio) + '</div>' +
-      barra +
+  // Vista simplificada (pedido explícito del usuario 2026-09-02): solo
+  // nombre + % de avance para Coordinadores y Gerentes -- nada de montos,
+  // subtextos ni barra, y sin listar vendedores externos uno por uno (esos
+  // solo se cuentan en el resumen de arriba, "X/Y en meta").
+  function filaPct(nombre, pct, cumplio) {
+    return '<div class="bonometa-fila-pct">' +
+      '<span class="bonometa-fila-nombre">' + nombre + '</span>' +
+      '<span class="bonometa-fila-pct-valor' + (cumplio ? ' ok' : '') + '">' + Math.round(pct * 100) + '%</span>' +
       '</div>';
   }
 
-  // Cada lista puede traer decenas de filas (un Coordinador real llega a
-  // tener 30+ vendedores evaluados) -- volcarlas todas de un jalón disparaba
-  // el alto de la tarjeta y dejaba huecos enormes junto a las vecinas. Se
-  // truncan a 5 con un "Ver todos", igual que ya hace "Atención requerida"
-  // (ccToggleAlertas).
-  var LIMITE_BONOMETA = 5;
+  // Igual puede haber decenas de Coordinadores/Gerentes en una empresa
+  // grande -- se truncan a 8 (ya sin subtexto ni barra caben más por fila
+  // que antes) con un "Ver todos", igual que "Atención requerida".
+  var LIMITE_BONOMETA = 8;
   function ccRenderListaBonoMeta(contenedorId, filasHtml, seccion, vacioTexto) {
     var cont = document.getElementById(contenedorId);
     if (!filasHtml.length) {
@@ -1249,29 +1239,23 @@ function ccRenderBonoMeta() {
     cont.innerHTML = mostrar.join("") + pie;
   }
 
-  var coordinadores = (bm.coordinadores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  var coordinadores = (bm.coordinadores || []).slice().sort(function (a, b) { return b.pct_promedio - a.pct_promedio; });
   var coordCumplieron = coordinadores.filter(function (c) { return c.pct_promedio >= 1; }).length;
   ccRenderListaBonoMeta("bonoMetaCoordinadores", coordinadores.map(function (c) {
-    return filaBono(c.coordinador, c.vendedores_evaluados + " vendedores evaluados",
-      ccMoneda(c.bono) + " · " + Math.round(c.pct_promedio * 100) + "%", c.pct_promedio, c.pct_promedio >= 1);
+    return filaPct(c.coordinador, c.pct_promedio, c.pct_promedio >= 1);
   }), "coordinadores", "Sin coordinadores con equipo asignado");
 
-  // "X casas prioritarias" en vez de nombrar un fraccionamiento fijo -- el
-  // equipo de un Gerente puede vender en más de una plaza, cada una con su
-  // propio prioritario, así que ya no hay un solo nombre que ponerle aquí.
-  var gerentes = (bm.gerentes || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  // "pct" del Gerente lo manda el backend (ver ControladorMetaBono::
+  // ctrReporteCompleto()): casas prioritarias del equipo sobre el tramo más
+  // alto configurado, como referencia de "meta completa".
+  var gerentes = (bm.gerentes || []).slice().sort(function (a, b) { return (b.pct || 0) - (a.pct || 0); });
   var gerCumplieron = gerentes.filter(function (g) { return g.bono > 0; }).length;
   ccRenderListaBonoMeta("bonoMetaGerentes", gerentes.map(function (g) {
-    var sub = (g.coordinador ? g.coordinador + " · " : "") + g.casas_prioridad_equipo + " casas prioritarias del equipo";
-    return filaBono(g.gerente, sub, ccMoneda(g.bono), null, g.bono > 0);
+    return filaPct(g.gerente, g.pct || 0, g.bono > 0);
   }), "gerentes", "Sin gerentes capturados");
 
-  var vendedores = (bm.vendedores || []).slice().sort(function (a, b) { return b.bono - a.bono; });
+  var vendedores = bm.vendedores || [];
   var venCumplieron = vendedores.filter(function (v) { return v.pct_meta >= 1; }).length;
-  ccRenderListaBonoMeta("bonoMetaVendedores", vendedores.map(function (v) {
-    var sub = (v.gerente || "") + " · " + v.casas_prioridad + " de prioridad + " + v.casas_otras + " de otros";
-    return filaBono(v.vendedor, sub, ccMoneda(v.bono) + " · " + Math.round(v.pct_meta * 100) + "%", v.pct_meta, v.pct_meta >= 1);
-  }), "vendedores", "Sin vendedores externos capturados");
 
   document.getElementById("bonoMetaResumen").innerHTML =
     '<div class="bonometa-resumen-grid">' +
